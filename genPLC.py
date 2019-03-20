@@ -117,8 +117,8 @@ class VgcValveFB(ValveFB):
         return "FB_VGC";
 
 
-    
-class Mks500GaugeFB(GaugeFB):
+
+class ColdCathodeGaugeFB(GaugeFB):
 
 
     
@@ -141,8 +141,32 @@ class Mks500GaugeFB(GaugeFB):
                 PlcGenerator.terminator)
     
 
+    
+class Mks500GaugeFB(ColdCathodeGaugeFB):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
     def fbType(self):
         return "FB_MKS500";
+
+
+
+class Mks500EPGaugeFB(ColdCathodeGaugeFB):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def fbType(self):
+        return "FB_MKS500_EP";
 
 
 
@@ -215,7 +239,7 @@ class PlcContainer:
     @classmethod
     def hasFB(cls, deviceName):
         return ((deviceName in cls.plcDeviceMap) and
-                (otypeFB in cls.plcDeviceMap[deviceName]))
+                (cls.otypeFB in cls.plcDeviceMap[deviceName]))
 
 
 
@@ -301,19 +325,37 @@ class PlcGenerator:
             # function block invocation program code
             cls.addFbCode(fbType, fb.code())
 
+        # set up ordering of devices by type
+        deviceOrdering = []
+        deviceOrdering.append({"type":"FB_MKS275", "label":"MKS275 Gauges"})
+        deviceOrdering.append({"type":"FB_MKS500", "label":"MKS500 Gauges"})
+        deviceOrdering.append({"type":"FB_MKS500_EP", "label":"MKS500_EP Gauges"})
+        deviceOrdering.append({"type":"FB_VGC", "label":"VGC Valves"})
+        deviceOrdering.append({"type":"FB_PIP_GAMMA", "label":"PIP_Gamma Pumps"})
+        
         # write declarations file
         with open('plc.GVL_DEVICES', 'w') as f:
-            for fbtype in cls.fbDeclarations:
-                for fbd in cls.fbDeclarations[fbtype]:
-                    f.write(fbd)
+            for orderSpec in deviceOrdering:
+                fbtype = orderSpec["type"]
+                if (fbtype in cls.fbDeclarations):
                     f.write("\n")
+                    f.write("// " + orderSpec["label"])
+                    f.write("\n\n")
+                    for fbd in cls.fbDeclarations[fbtype]:
+                        f.write(fbd)
+                        f.write("\n")
 
         # write program file
         with open('plc.PRG_PLC', 'w') as f:
-            for fbtype in cls.fbCode:
-                for s in cls.fbCode[fbtype]:
-                    f.write(s)
+            for orderSpec in deviceOrdering:
+                fbtype = orderSpec["type"]
+                if (fbtype in cls.fbCode):
                     f.write("\n")
+                    f.write("// " + orderSpec["label"])
+                    f.write("\n\n")
+                    for s in cls.fbCode[fbtype]:
+                        f.write(s)
+                        f.write("\n")
         
 
                 
@@ -347,6 +389,10 @@ class DeviceFactory:
         elif (deviceInfo.tag == "MKS500"):
             fb = Mks500GaugeFB(deviceInfo)
 
+        # MKS500_EP gauge
+        elif (deviceInfo.tag == "MKS500_EP"):
+            fb = Mks500EPGaugeFB(deviceInfo)
+
         # MKS275 gauge
         elif (deviceInfo.tag == "MKS275"):
             fb = Mks275GaugeFB(deviceInfo)
@@ -354,7 +400,7 @@ class DeviceFactory:
         # pumps
 
         # PIP_GAMMA pump
-        elif (deviceInfo.tag == "PIP_GAMMA"):
+        elif (deviceInfo.tag == "PIP_Gamma"):
             fb = PipGammaPumpFB(deviceInfo)
 
         else:
@@ -375,7 +421,8 @@ class DeviceFactory:
 class DeviceHandler:
 
 
-    
+
+    devices = []
     nameWarnings = []
     mfrWarnings = []
     deviceWarnings = []
@@ -387,11 +434,11 @@ class DeviceHandler:
     def handleDevice(cls, rowCount, info):
         
         iName = info[3]
-        iTag = info[4]
-        iDepGauge1 = info[5]
-        iDepGauge2 = info[6]
-        iDepPump1 = info[7]
-        iDepValve1 = info[8]
+        iTag = info[5]
+        iDepGauge1 = info[6]
+        iDepGauge2 = info[7]
+        iDepPump1 = info[8]
+        iDepValve1 = info[9]
 
         if ((not iName) or (len(iName) == 0)):
             cls.nameWarnings.append(
@@ -405,12 +452,14 @@ class DeviceHandler:
         
         devInfo = DeviceInfo(iName, iTag, iDepGauge1, iDepGauge2, iDepPump1, iDepValve1)
 
-        device = DeviceFactory.createDevice(devInfo)
-        if (not device):
-            cls.deviceWarnings.append(
-                "no device created for row %d: %s" % (rowCount, info))
-        else:
-            cls.deviceCount = cls.deviceCount + 1
+        # if we have a non-empty device list, only create the devices it contains
+        if ((not len(cls.devices)) or ((len(cls.devices)) and (iName in cls.devices))):
+            device = DeviceFactory.createDevice(devInfo)
+            if (not device):
+                cls.deviceWarnings.append(
+                    "no device created for row %d: %s" % (rowCount, info))
+            else:
+                cls.deviceCount = cls.deviceCount + 1
         
 
 
@@ -440,7 +489,17 @@ class DeviceHandler:
 
 def main():
 
-    with open('C:/Users/auto/Documents/projects/20190312 python PLC creation/device-info.csv', newline='') as f:
+    # read optional list of devices to create, otherwise try to create everything
+    try:
+        with open('./device-list.csv', newline='') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                DeviceHandler.devices.append(row[0])
+            print("creating %d devices in device list: %s" % (len(DeviceHandler.devices), DeviceHandler.devices))
+    except:
+        pass
+
+    with open('./device-info.csv', newline='') as f:
 
         rowCount = 0
         reader = csv.reader(f)
