@@ -106,7 +106,7 @@ class VgcValveFB(ValveFB):
                 upGauge.fbName + ".IG" +
                 ", i_stDSG := " +
                 downGauge.fbName + ".IG" +
-                ", i_xDis_DPIlk := TRUE, i_xEPS_OK := TRUE, i_xPMPS_OK := TRUE," +
+                ", i_xDis_DPIlk := FALSE, i_xEPS_OK := TRUE, i_xPMPS_OK := TRUE," +
                 " i_xExt_OK := TRUE, i_xOverrideMode := xSystemOverrideMode" +
                 PlcGenerator.closeParen +
                 PlcGenerator.terminator)
