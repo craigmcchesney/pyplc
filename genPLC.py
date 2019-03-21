@@ -423,6 +423,7 @@ class DeviceHandler:
 
 
     devices = []
+    deviceTypes = set()
     nameWarnings = []
     mfrWarnings = []
     deviceWarnings = []
@@ -449,6 +450,8 @@ class DeviceHandler:
             cls.mfrWarnings.append(
                 "missing plc tag for row %d: %s" % (rowCount, info))
             return
+
+        cls.deviceTypes.add(iTag)
         
         devInfo = DeviceInfo(iName, iTag, iDepGauge1, iDepGauge2, iDepPump1, iDepValve1)
 
@@ -484,6 +487,16 @@ class DeviceHandler:
         print("devices created: %d" % cls.deviceCount)
         print("\tfunction blocks: %d" % len(PlcContainer.FBs))
         print("create failures: %d" % len(cls.deviceWarnings))
+
+        # print file with all unique devices
+        try:
+            with open('plc.deviceTypes', 'w') as f:
+                for dtype in sorted(cls.deviceTypes):
+                    f.write(dtype)
+                    f.write("\n")
+        except Exception as ex:
+            print(ex)
+            sys.exit("failed to create ./plc.deviceTypes file")
         
 
 
@@ -509,7 +522,8 @@ def main():
             rowCount = rowCount + 1
 
             # skip header
-            if (rowCount < 4):
+            if (rowCount < 6):
+                print("skipping: %s" + str(row))
                 continue
 
             DeviceHandler.handleDevice(rowCount, row)
