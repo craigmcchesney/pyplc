@@ -5,17 +5,209 @@ from abc import ABC, abstractmethod
 
 
 class DeviceInfo:
-    def __init__(self, name, tag, depGauge1, depGauge2, depPump1, depValve1):
+    def __init__(self, name, tag, depGauge1, depGauge2, depPump1, depValve1, volume, depVol1, depVol2):
         self.name = name
         self.tag = tag
         self.depGauge1 = depGauge1
         self.depGauge2 = depGauge2
         self.depPump1 = depPump1
         self.depValve1 = depValve1
+        self.volume = volume
+        self.depVol1 = depVol1
+        self.depVol2 = depVol2
 
         
 
-# abstract base class for plc objects
+# registers device class types with PlcDevice class for look up by tag
+def register(deviceClass):
+    PlcDevice.register(deviceClass.tag(), deviceClass)
+    
+# abstract base class for plc devices
+class PlcDevice(ABC):
+
+
+
+    deviceTypes = {}
+
+
+
+    # register PlcDevice concrete classes for look up by tag
+    @classmethod
+    def register(cls, tag, theClass):
+        cls.deviceTypes[tag] = theClass
+        
+
+    # return the class for the specified tag
+    @classmethod
+    def deviceType(cls, tag):
+        return cls.deviceTypes[tag]
+    
+
+
+    # create instance of class with specified tag
+    @classmethod
+    def createDevice(cls, tag, deviceInfo):
+        deviceClass = cls.deviceType(tag)
+        deviceInstance = deviceClass(deviceInfo)
+        return deviceInstance
+
+
+    
+    @staticmethod
+    @abstractmethod # must be innermost decorator!
+    def tag():
+        pass
+
+
+
+    def __init__(self, deviceInfo):
+        self.deviceInfo = deviceInfo
+
+
+
+    def name(self):
+        return self.deviceInfo.name
+
+
+
+    def volume(self):
+        return self.deviceInfo.volume
+
+
+
+    # return function block for plc code
+    @abstractmethod
+    def plcFunctionBlock(self):
+        pass
+
+
+
+class ValveDevice(PlcDevice):
+    pass
+
+
+
+class GaugeDevice(PlcDevice):
+    pass
+
+
+
+class PumpDevice(PlcDevice):
+    pass
+
+
+
+@register
+class VgcValveDevice(ValveDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "VGC";
+
+
+
+    def plcFunctionBlock(self):
+        return VgcValveFB(self.deviceInfo)
+
+
+
+class ColdCathodeGaugeDevice(GaugeDevice):
+    pass
+
+
+
+@register
+class Mks500GaugeDevice(ColdCathodeGaugeDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "MKS500";
+
+
+
+    def plcFunctionBlock(self):
+        return Mks500GaugeFB(self.deviceInfo)
+
+
+
+@register
+class Mks500EPGaugeDevice(ColdCathodeGaugeDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "MKS500_EP";
+
+
+
+    def plcFunctionBlock(self):
+        return Mks500EPGaugeFB(self.deviceInfo)
+
+
+
+@register
+class Mks275GaugeDevice(GaugeDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "MKS275";
+
+
+
+    def plcFunctionBlock(self):
+        return Mks275GaugeFB(self.deviceInfo)
+
+
+
+@register
+class PipGammaPumpDevice(PumpDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "PIP_GAMMA";
+
+
+
+    def plcFunctionBlock(self):
+        return PipGammaPumpFB(self.deviceInfo)
+
+
+
+# abstract base class for plc code objects
 class PlcObject(ABC):
 
 
@@ -220,6 +412,25 @@ class PipGammaPumpFB(PumpFB):
 
 
 
+class DeviceContainer:
+
+
+
+    deviceList = [] # list of device names as encountered in input for sequential access
+    deviceMap = {} # map of device name to device object for indexed access
+
+
+
+    @classmethod
+    def addDevice(cls, deviceName, device):
+        # device name must be unique
+        if (deviceName in cls.deviceList):
+            sys.exit("duplicate device name: " + deviceName)
+        cls.deviceList.append(deviceName)
+        cls.deviceMap[deviceName] = device
+
+
+    
 class PlcContainer:
 
 
@@ -245,15 +456,14 @@ class PlcContainer:
 
     @classmethod
     def addFB(cls, deviceName, fbObj):
-        # TODO: log errors
         if not deviceName in cls.plcDeviceMap:
             cls.plcDeviceMap[deviceName] = {}
         else:
             # device shouldn't already be in map
-            return False
+            sys.exit("%s already in plcDeviceMap" % (deviceName))
         if cls.otypeFB in cls.plcDeviceMap[deviceName]:
             # shouldn't already be a function block in the map for this device
-            return False
+            sys.exit("function block for %s already in plcDeviceMap" % (deviceName))
         else:          
             devObjMap = cls.plcDeviceMap[deviceName]
             devObjMap[cls.otypeFB] = fbObj
@@ -312,6 +522,13 @@ class PlcGenerator:
     @classmethod
     def generatePlc(cls):
 
+        # iterate through devices and create plc objects organized into files
+        for devName in DeviceContainer.deviceList:
+            device = DeviceContainer.deviceMap[devName]
+            devFile = device.volume()
+            plcFB = device.plcFunctionBlock()
+            PlcContainer.addFB(device.name(), plcFB)
+
         # add declarations and program code for function blocks
         for fb in PlcContainer.FBs:
 
@@ -365,59 +582,6 @@ class PlcGenerator:
 
 
     
-class DeviceFactory:
-
-    @classmethod
-    def createDevice(cls, deviceInfo):
-
-        if PlcContainer.hasFB(deviceInfo.name):
-            # already exists so fail
-            # TODO: exit here?
-            return None
-
-        fb = None
-        
-        # valves
-
-        # VGC valve
-        if (deviceInfo.tag == "VGC"):
-            fb = VgcValveFB(deviceInfo)
- 
-        # gauges
-
-        # MKS500 gauge
-        elif (deviceInfo.tag == "MKS500"):
-            fb = Mks500GaugeFB(deviceInfo)
-
-        # MKS500_EP gauge
-        elif (deviceInfo.tag == "MKS500_EP"):
-            fb = Mks500EPGaugeFB(deviceInfo)
-
-        # MKS275 gauge
-        elif (deviceInfo.tag == "MKS275"):
-            fb = Mks275GaugeFB(deviceInfo)
-
-        # pumps
-
-        # PIP_GAMMA pump
-        elif (deviceInfo.tag == "PIP_Gamma"):
-            fb = PipGammaPumpFB(deviceInfo)
-
-        else:
-            # unhandled device tag
-            # TODO: exit here?
-            return None
-
-        success = PlcContainer.addFB(deviceInfo.name, fb)
-        if success:
-            return fb
-        else:
-            # TODO: handle failure, exit?
-            return None
-
-
-
-
 class DeviceHandler:
 
 
@@ -427,42 +591,45 @@ class DeviceHandler:
     nameWarnings = []
     mfrWarnings = []
     deviceWarnings = []
-    deviceCount = 0
 
 
     
     @classmethod
     def handleDevice(cls, rowCount, info):
         
-        iName = info[3]
-        iTag = info[5]
-        iDepGauge1 = info[6]
-        iDepGauge2 = info[7]
-        iDepPump1 = info[8]
-        iDepValve1 = info[9]
-
-        if ((not iName) or (len(iName) == 0)):
-            cls.nameWarnings.append(
-                "no iName provided for row %d: %s" % (rowCount, info))
-            return
-        
-        if ((not iTag) or (len(iTag) == 0)):
-            cls.mfrWarnings.append(
-                "missing plc tag for row %d: %s" % (rowCount, info))
-            return
+        iName = info[2]
+        iTag = info[4].upper()
+        iDepGauge1 = info[5]
+        iDepGauge2 = info[6]
+        iDepPump1 = info[7]
+        iDepValve1 = info[8]
+        iVolume = info[9]
+        iDepVol1 = info[10]
+        iDepVol2 = info[11]
 
         cls.deviceTypes.add(iTag)
-        
-        devInfo = DeviceInfo(iName, iTag, iDepGauge1, iDepGauge2, iDepPump1, iDepValve1)
 
         # if we have a non-empty device list, only create the devices it contains
         if ((not len(cls.devices)) or ((len(cls.devices)) and (iName in cls.devices))):
-            device = DeviceFactory.createDevice(devInfo)
+
+            if ((not iName) or (len(iName) == 0)):
+                sys.exit("no iName provided for row %d: %s" % (rowCount, info))
+
+            if ((not iTag) or (len(iTag) == 0)):
+                sys.exit("missing plc tag for row %d: %s" % (rowCount, info))
+
+            if ((not iVolume) or (len(iVolume) == 0)):
+                sys.exit("missing plc tag for row %d: %s" % (rowCount, info))
+
+            devInfo = DeviceInfo(iName, iTag, iDepGauge1, iDepGauge2, iDepPump1,
+                                 iDepValve1, iVolume, iDepVol1, iDepVol2)
+            
+            device = PlcDevice.createDevice(iTag, devInfo)
+            
             if (not device):
-                cls.deviceWarnings.append(
-                    "no device created for row %d: %s" % (rowCount, info))
+                sys.exit("no device created for row %d: %s" % (rowCount, info))
             else:
-                cls.deviceCount = cls.deviceCount + 1
+                DeviceContainer.addDevice(iName, device)
         
 
 
@@ -484,7 +651,7 @@ class DeviceHandler:
         print("==================================================")
         print("SUMMARY")
         print("==================================================")
-        print("devices created: %d" % cls.deviceCount)
+        print("devices created: %d" % len(DeviceContainer.deviceList))
         print("\tfunction blocks: %d" % len(PlcContainer.FBs))
         print("create failures: %d" % len(cls.deviceWarnings))
 
@@ -509,8 +676,9 @@ def main():
             for row in reader:
                 DeviceHandler.devices.append(row[0])
             print("creating %d devices in device list: %s" % (len(DeviceHandler.devices), DeviceHandler.devices))
-    except:
-        pass
+    except Exception as ex:
+        print(ex)
+        sys.exit("error processing device-list file")
 
     with open('./device-info.csv', newline='') as f:
 
@@ -523,12 +691,9 @@ def main():
 
             # skip header
             if (rowCount < 6):
-                print("skipping: %s" + str(row))
                 continue
 
             DeviceHandler.handleDevice(rowCount, row)
-
-        print(PlcContainer.plcDeviceMap)
 
         PlcGenerator.generate()
 
