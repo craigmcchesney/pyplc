@@ -298,7 +298,6 @@ class VgcValveFB(ValveFB):
         upGauge = PlcContainer.getFB(self.upstreamGauge)
         downGauge = PlcContainer.getFB(self.downstreamGauge)
         if ((not upGauge) or (not downGauge)):
-            # TODO: exit if dependencies don't exist?
             sys.exit("unable to find upGauge: %s or downGauge: %s" % (self.upstreamGauge, self.downstreamGauge))
         return (self.fbName +
                 PlcGenerator.openParen +
@@ -331,8 +330,7 @@ class ColdCathodeGaugeFB(GaugeFB):
     def code(self):
         ionGauge = PlcContainer.getFB(self.ionGauge)
         if ((not ionGauge)):
-            # TODO: exit if dependencies don't exist?
-            sys.exit("unable to find ion gague: %s" % self.ionGauge)
+            sys.exit("unable to find ion gauge: %s" % self.ionGauge)
         return (self.fbName +
                 PlcGenerator.openParen +
                 "PG := " +
@@ -439,22 +437,89 @@ class DeviceContainer:
 
 
     
+class PlcDocument:
+
+
+    
+    def __init__(self, docName):
+        #super().__init__(docName)
+        self.name = docName
+        self.contentMap = {} # map of object type string keys to list of lines values
+
+
+
+    def addContent(self, otype, lines):
+        if (not otype in self.contentMap):
+            self.contentMap[otype] = []
+        self.contentMap[otype].extend(lines)
+
+
+
+    def writeToFile(self, fobj, devOrdering):
+        
+        specifiedKeys = [s["type"] for s in devOrdering]
+        unspecifiedKeys = [value for value in self.contentMap.keys() if value not in specifiedKeys]
+        for k in unspecifiedKeys:
+            devOrdering.append({"type":k, "label":k})
+            
+        for orderSpec in devOrdering:
+            fbtype = orderSpec["type"]
+            if (fbtype in self.contentMap.keys()):
+                fobj.write("\n")
+                fobj.write("// " + orderSpec["label"])
+                fobj.write("\n\n")
+                for fbd in self.contentMap[fbtype]:
+                    fobj.write(fbd)
+                    fobj.write("\n")                
+
+
+
+class VariableDocument(PlcDocument):
+    pass
+                
+
+
+
+class ProgramDocument(PlcDocument):
+    pass
+
+
+    
 class PlcContainer:
 
 
     
-    # core data structure
+    # maps with document name key to document object value
+    varDocs = {}
+    progDocs = {}
+    
     # key is device name, value is map of plc object type to plc object instance
     # e.g., "TV3K0-VGC-1" -> {"fb" -> (instance of VgcValveFB))
+    # for device dependency lookup
     plcDeviceMap = {}
-
-    # need ordered list of function blocks for generation, points to same fb object as plcDeviceMap
-    FBs = []
 
     otypeFB = "fb"
 
-
     
+
+    @classmethod
+    def addToVariablesDocument(cls, docName, otype, lines):
+        if (not docName in cls.varDocs):
+            cls.varDocs[docName] = VariableDocument(docName)
+        document = cls.varDocs[docName]
+        document.addContent(otype, lines)
+
+
+
+    @classmethod
+    def addToProgramDocument(cls, docName, otype, lines):
+        if (not docName in cls.progDocs):
+            cls.progDocs[docName] = ProgramDocument(docName)
+        document = cls.progDocs[docName]
+        document.addContent(otype, lines)
+
+
+
     @classmethod
     def hasFB(cls, deviceName):
         return ((deviceName in cls.plcDeviceMap) and
@@ -475,7 +540,6 @@ class PlcContainer:
         else:          
             devObjMap = cls.plcDeviceMap[deviceName]
             devObjMap[cls.otypeFB] = fbObj
-            cls.FBs.append(fbObj)
             return True
 
 
@@ -493,32 +557,12 @@ class PlcContainer:
 
 class PlcGenerator:
 
-    fbDeclarations = {}
-    fbCode = {}
     openParen = "("
     closeParen = ")"
     terminator = ";"
 
 
 
-    @classmethod
-    def addFbDeclaration(cls, fbType, fbDeclaration):
-        if fbType not in cls.fbDeclarations:
-            cls.fbDeclarations[fbType] = []
-        fbDecls = cls.fbDeclarations[fbType]
-        fbDecls.append(fbDeclaration)
-
-
-        
-    @classmethod
-    def addFbCode(cls, fbType, fbCode):
-        if fbType not in cls.fbCode:
-            cls.fbCode[fbType] = []
-        code = cls.fbCode[fbType]
-        code.append(fbCode)
-
-
-        
     @classmethod
     def generate(cls):
 
@@ -533,22 +577,18 @@ class PlcGenerator:
         # iterate through devices and create plc objects organized into files
         for devName in DeviceContainer.deviceList:
             device = DeviceContainer.deviceMap[devName]
-            devFile = device.volume()
-            plcFB = device.plcFunctionBlock()
-            PlcContainer.addFB(device.name(), plcFB)
+            docName = device.volume()
 
-        # add declarations and program code for function blocks
-        for fb in PlcContainer.FBs:
+            plcFB = PlcContainer.getFB(devName)
+            
+            decs = []
+            decs.append(plcFB.pragma())
+            decs.append(plcFB.declaration())
+            PlcContainer.addToVariablesDocument(docName, plcFB.fbType(), decs)
 
-            # organize declarations and code by object type for readability
-            fbType = fb.fbType()
-
-            # function block variable declaration
-            cls.addFbDeclaration(fbType, fb.pragma())
-            cls.addFbDeclaration(fbType, fb.declaration())
-
-            # function block invocation program code
-            cls.addFbCode(fbType, fb.code())
+            code = []
+            code.append(plcFB.code())
+            PlcContainer.addToProgramDocument(docName, plcFB.fbType(), code)
 
         # set up ordering of devices by type
         deviceOrdering = []
@@ -558,30 +598,15 @@ class PlcGenerator:
         deviceOrdering.append({"type":"FB_VGC", "label":"VGC Valves"})
         deviceOrdering.append({"type":"FB_PIP_GAMMA", "label":"PIP_Gamma Pumps"})
         
-        # write declarations file
-        with open('plc.GVL_DEVICES', 'w') as f:
-            for orderSpec in deviceOrdering:
-                fbtype = orderSpec["type"]
-                if (fbtype in cls.fbDeclarations):
-                    f.write("\n")
-                    f.write("// " + orderSpec["label"])
-                    f.write("\n\n")
-                    for fbd in cls.fbDeclarations[fbtype]:
-                        f.write(fbd)
-                        f.write("\n")
+        # write variables documents
+        for docName, document in PlcContainer.varDocs.items():
+            with open('gen.plc.GVL_' + docName.upper(), 'w') as f:
+                document.writeToFile(f, deviceOrdering)
 
-        # write program file
-        with open('plc.PRG_PLC', 'w') as f:
-            for orderSpec in deviceOrdering:
-                fbtype = orderSpec["type"]
-                if (fbtype in cls.fbCode):
-                    f.write("\n")
-                    f.write("// " + orderSpec["label"])
-                    f.write("\n\n")
-                    for s in cls.fbCode[fbtype]:
-                        f.write(s)
-                        f.write("\n")
-        
+        # write program documents
+        for docName, document in PlcContainer.progDocs.items():
+            with open('gen.plc.PRG_' + docName.upper(), 'w') as f:
+                document.writeToFile(f, deviceOrdering)
 
                 
     @classmethod
@@ -638,6 +663,10 @@ class DeviceHandler:
                 sys.exit("no device created for row %d: %s" % (rowCount, info))
             else:
                 DeviceContainer.addDevice(iName, device)
+                plcFB = device.plcFunctionBlock()
+                PlcContainer.addFB(iName, plcFB)
+           
+
         
 
 
@@ -660,12 +689,11 @@ class DeviceHandler:
         print("SUMMARY")
         print("==================================================")
         print("devices created: %d" % len(DeviceContainer.deviceList))
-        print("\tfunction blocks: %d" % len(PlcContainer.FBs))
         print("create failures: %d" % len(cls.deviceWarnings))
 
         # print file with all unique devices
         try:
-            with open('plc.deviceTypes', 'w') as f:
+            with open('gen.plc.deviceTypes', 'w') as f:
                 for dtype in sorted(cls.deviceTypes):
                     f.write(dtype)
                     f.write("\n")
