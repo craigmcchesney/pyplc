@@ -619,6 +619,7 @@ class DeviceHandler:
 
 
 
+    volumes = []
     devices = []
     deviceTypes = set()
 
@@ -638,7 +639,9 @@ class DeviceHandler:
         iDepVol2 = info["sim dep vol2"]
 
         # if we have a non-empty device list, only create the devices it contains
-        if ((not len(cls.devices)) or ((len(cls.devices)) and (iName in cls.devices))):
+        if (((not len(cls.devices)) and (not len(cls.volumes))) or
+            ((len(cls.devices)) and (iName in cls.devices)) or
+            ((len(cls.volumes)) and (iVolume in cls.volumes))):
 
             if ((not iName) or (len(iName) == 0)):
                 sys.exit("no iName provided for row %d: %s" % (rowCount, info))
@@ -647,7 +650,7 @@ class DeviceHandler:
                 sys.exit("missing plc tag for row %d: %s" % (rowCount, info))
 
             if ((not iVolume) or (len(iVolume) == 0)):
-                sys.exit("missing plc tag for row %d: %s" % (rowCount, info))
+                sys.exit("missing volume for row %d: %s" % (rowCount, info))
 
             cls.deviceTypes.add(iTag)
 
@@ -688,7 +691,17 @@ class DeviceHandler:
 
 def main():
 
-    # read optional list of devices to create, otherwise try to create everything
+    # read optional list of volumes to create
+    try:
+        with open('./volumes-list.csv', newline='') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                DeviceHandler.volumes.append(row[0])
+            print("creating %d volume(s) in volumes list: %s" % (len(DeviceHandler.volumes), DeviceHandler.volumes))
+    except Exception as ex:
+        print(ex)
+
+    # read optional list of devices to create
     try:
         with open('./device-list.csv', newline='') as f:
             reader = csv.reader(f)
@@ -697,7 +710,6 @@ def main():
             print("creating %d devices in device list: %s" % (len(DeviceHandler.devices), DeviceHandler.devices))
     except Exception as ex:
         print(ex)
-        sys.exit("error processing device-list file")
 
     with open('./device-info.csv', newline='') as f:
 
