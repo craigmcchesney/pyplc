@@ -621,26 +621,21 @@ class DeviceHandler:
 
     devices = []
     deviceTypes = set()
-    nameWarnings = []
-    mfrWarnings = []
-    deviceWarnings = []
 
 
     
     @classmethod
     def handleDevice(cls, rowCount, info):
         
-        iName = info[2]
-        iTag = info[4].upper()
-        iDepGauge1 = info[5]
-        iDepGauge2 = info[6]
-        iDepPump1 = info[7]
-        iDepValve1 = info[8]
-        iVolume = info[9]
-        iDepVol1 = info[10]
-        iDepVol2 = info[11]
-
-        cls.deviceTypes.add(iTag)
+        iName = info["Device Name"]
+        iTag = info["PLC Tag"].upper()
+        iDepGauge1 = info["PLC dep gauge1"]
+        iDepGauge2 = info["PLC dep gauge2"]
+        iDepPump1 = info["PLC dep pump1"]
+        iDepValve1 = info["PLC dep valve1"]
+        iVolume = info["Volume"]
+        iDepVol1 = info["sim dep vol1"]
+        iDepVol2 = info["sim dep vol2"]
 
         # if we have a non-empty device list, only create the devices it contains
         if ((not len(cls.devices)) or ((len(cls.devices)) and (iName in cls.devices))):
@@ -653,6 +648,8 @@ class DeviceHandler:
 
             if ((not iVolume) or (len(iVolume) == 0)):
                 sys.exit("missing plc tag for row %d: %s" % (rowCount, info))
+
+            cls.deviceTypes.add(iTag)
 
             devInfo = DeviceInfo(iName, iTag, iDepGauge1, iDepGauge2, iDepPump1,
                                  iDepValve1, iVolume, iDepVol1, iDepVol2)
@@ -672,24 +669,10 @@ class DeviceHandler:
 
     @classmethod
     def printReport(cls):
-        # print()
-        # print("==================================================")
-        # print("NAME WARNINGS")
-        # print("==================================================")
-        # for w in cls.nameWarnings:
-        #     print(w)
-        # print()
-        # print("==================================================")
-        # print("MFR WARNINGS")
-        # print("==================================================")
-        # for w in cls.mfrWarnings:
-        #     print(w)
-        # print()
         print("==================================================")
         print("SUMMARY")
         print("==================================================")
         print("devices created: %d" % len(DeviceContainer.deviceList))
-        print("create failures: %d" % len(cls.deviceWarnings))
 
         # print file with all unique devices
         try:
@@ -719,20 +702,13 @@ def main():
     with open('./device-info.csv', newline='') as f:
 
         rowCount = 0
-        reader = csv.reader(f)
+        reader = csv.DictReader(f)
 
         for row in reader:
-
             rowCount = rowCount + 1
-
-            # skip header
-            if (rowCount < 6):
-                continue
-
             DeviceHandler.handleDevice(rowCount, row)
 
         PlcGenerator.generate()
-
         DeviceHandler.printReport()
 
 
