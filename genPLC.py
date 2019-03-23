@@ -76,8 +76,16 @@ class PlcDevice(ABC):
 
 
     # return function block for plc code
-    @abstractmethod
     def plcFunctionBlock(self):
+#        return VgcValveFB(self.deviceInfo)
+        className = self.plcFunctionBlockType()
+        cls = globals()[className]
+        return cls(self.deviceInfo)
+
+
+
+    @abstractmethod
+    def plcFunctionBlockType(self):
         pass
 
 
@@ -113,8 +121,8 @@ class VgcValveDevice(ValveDevice):
 
 
 
-    def plcFunctionBlock(self):
-        return VgcValveFB(self.deviceInfo)
+    def plcFunctionBlockType(self):
+        return "VgcValveFB"
 
 
 
@@ -139,8 +147,8 @@ class Mks500GaugeDevice(ColdCathodeGaugeDevice):
 
 
 
-    def plcFunctionBlock(self):
-        return Mks500GaugeFB(self.deviceInfo)
+    def plcFunctionBlockType(self):
+        return "Mks500GaugeFB"
 
 
 
@@ -160,8 +168,8 @@ class Mks500EPGaugeDevice(ColdCathodeGaugeDevice):
 
 
 
-    def plcFunctionBlock(self):
-        return Mks500EPGaugeFB(self.deviceInfo)
+    def plcFunctionBlockType(self):
+        return "Mks500EPGaugeFB"
 
 
 
@@ -181,8 +189,8 @@ class Mks275GaugeDevice(GaugeDevice):
 
 
 
-    def plcFunctionBlock(self):
-        return Mks275GaugeFB(self.deviceInfo)
+    def plcFunctionBlockType(self):
+        return "Mks275GaugeFB"
 
 
 
@@ -202,8 +210,8 @@ class PipGammaPumpDevice(PumpDevice):
 
 
 
-    def plcFunctionBlock(self):
-        return PipGammaPumpFB(self.deviceInfo)
+    def plcFunctionBlockType(self):
+        return "PipGammaPumpFB"
 
 
 
