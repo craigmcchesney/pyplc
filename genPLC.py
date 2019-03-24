@@ -626,7 +626,7 @@ class DeviceHandler:
 
     
     @classmethod
-    def handleDevice(cls, rowCount, info):
+    def handleDevice(cls, rowCount, info, listTagsOnly=False):
         
         iName = info["Device Name"]
         iTag = info["PLC Tag"].upper()
@@ -652,40 +652,41 @@ class DeviceHandler:
             if ((not iVolume) or (len(iVolume) == 0)):
                 sys.exit("missing volume for row %d: %s" % (rowCount, info))
 
-            cls.deviceTypes.add(iTag)
+            if listTagsOnly:
+                cls.deviceTypes.add(iTag)
 
-            devInfo = DeviceInfo(iName, iTag, iDepGauge1, iDepGauge2, iDepPump1,
-                                 iDepValve1, iVolume, iDepVol1, iDepVol2)
-            
-            device = PlcDevice.createDevice(iTag, devInfo)
-            
-            if (not device):
-                sys.exit("no device created for row %d: %s" % (rowCount, info))
             else:
-                DeviceContainer.addDevice(iName, device)
-                plcFB = device.plcFunctionBlock()
-                PlcContainer.addFB(iName, plcFB)
+
+                devInfo = DeviceInfo(iName, iTag, iDepGauge1, iDepGauge2, iDepPump1,
+                                     iDepValve1, iVolume, iDepVol1, iDepVol2)
+
+                device = PlcDevice.createDevice(iTag, devInfo)
+
+                if (not device):
+                    sys.exit("no device created for row %d: %s" % (rowCount, info))
+                else:
+                    DeviceContainer.addDevice(iName, device)
+                    plcFB = device.plcFunctionBlock()
+                    PlcContainer.addFB(iName, plcFB)
            
 
         
 
 
     @classmethod
-    def printReport(cls):
-        print("==================================================")
-        print("SUMMARY")
-        print("==================================================")
-        print("devices created: %d" % len(DeviceContainer.deviceList))
+    def printResult(cls, listTagsOnly=False):
 
-        # print file with all unique devices
-        try:
-            with open('gen.plc.deviceTypes', 'w') as f:
-                for dtype in sorted(cls.deviceTypes):
-                    f.write(dtype)
-                    f.write("\n")
-        except Exception as ex:
-            print(ex)
-            sys.exit("failed to create ./plc.deviceTypes file")
+        if listTagsOnly:
+            
+            # print all unique devices
+            for dtype in sorted(cls.deviceTypes):
+                print(dtype)
+
+        else:
+            print("==================================================")
+            print("SUMMARY")
+            print("==================================================")
+            print("devices created: %d" % len(DeviceContainer.deviceList))
         
 
 
@@ -693,7 +694,10 @@ def main():
 
     # process command line
     parser = argparse.ArgumentParser()
-    parser.add_argument("deviceInfoFile", help="csv file with device info, expected format is first line with column names %s" % ("Device Name, PLC Tag, PLC dep gauge1, PLC dep gauge2, PLC dep pump1, PLC dep valve1, Volume, sim dep vol1, sim dep vol2"))
+    parser.add_argument("deviceInfoFile", help="csv file with device info, expected format is first " +
+                        "line with column names %s" % ("Device Name, PLC Tag, PLC dep gauge1, " +
+                                                       "PLC dep gauge2, PLC dep pump1, PLC dep valve1, " +
+                                                       "Volume, sim dep vol1, sim dep vol2"))
     parser.add_argument("--tags", help="list unique tag types for specified devices", action="store_true")
     parser.add_argument("--deviceFile", help="file containing devices to generate")
     parser.add_argument("--volumeFile", help="file containing volumes to generate")
@@ -703,51 +707,58 @@ def main():
     if not args.deviceInfoFile:
         sys.exit("no device info file specified")
     else:
+        print()
         print("using device info file: %s" % args.deviceInfoFile)
 
     # read optional list of volumes to create
     volFile = args.volumeFile
     if volFile:
-        print("generating volumes containined in file: %s" % volFile)
+        print()
+        print("using volumes file: %s" % volFile)
         try:
             with open(volFile, newline='') as f:
                 reader = csv.reader(f)
                 for row in reader:
                     DeviceHandler.volumes.append(row[0])
-                print("creating %d volume(s) in volumes list: %s" % (len(DeviceHandler.volumes), DeviceHandler.volumes))
+                print("volumes file contains %d volume(s): %s" % (len(DeviceHandler.volumes),
+                                                                  DeviceHandler.volumes))
         except Exception as ex:
             print(ex)
 
     # read optional list of devices to create
     devFile = args.deviceFile
     if devFile:
-        print("generating devices containined in file: %s" % devFile)
+        print()
+        print("using devices file: %s" % devFile)
         try:
             with open(devFile, newline='') as f:
                 reader = csv.reader(f)
                 for row in reader:
                     DeviceHandler.devices.append(row[0])
-                print("creating %d devices in device list: %s" % (len(DeviceHandler.devices), DeviceHandler.devices))
+                print("devices file contains %d device(s): %s" % (len(DeviceHandler.devices),
+                                                                  DeviceHandler.devices))
         except Exception as ex:
             print(ex)
 
-        listTagsOnly = False
-        if args.tags:
-            listTagsOnly = True
-            print("printing unique tags for specified devices")
-            sys.exit("printing tags not yet implemented")
+    listTagsOnly = False
+    if args.tags:
+        listTagsOnly = True
+        print()
+        print("printing unique tags for specified devices")
+        print()
 
-    with open('./device-info.csv', newline='') as f:
+    with open(args.deviceInfoFile, newline='') as f:
 
         rowCount = 0
         reader = csv.DictReader(f)
 
         for row in reader:
             rowCount = rowCount + 1
-            DeviceHandler.handleDevice(rowCount, row)
+            DeviceHandler.handleDevice(rowCount, row, listTagsOnly=listTagsOnly)
 
         PlcGenerator.generate()
-        DeviceHandler.printReport()
+        
+        DeviceHandler.printResult(listTagsOnly=listTagsOnly)
 
 
 
