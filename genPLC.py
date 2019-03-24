@@ -693,10 +693,17 @@ def main():
 
     # process command line
     parser = argparse.ArgumentParser()
+    parser.add_argument("deviceInfoFile", help="csv file with device info, expected format is first line with column names %s" % ("Device Name, PLC Tag, PLC dep gauge1, PLC dep gauge2, PLC dep pump1, PLC dep valve1, Volume, sim dep vol1, sim dep vol2"))
     parser.add_argument("--tags", help="list unique tag types for specified devices", action="store_true")
     parser.add_argument("--deviceFile", help="file containing devices to generate")
     parser.add_argument("--volumeFile", help="file containing volumes to generate")
     args = parser.parse_args()
+
+    # make sure devInfo input file is specified
+    if not args.deviceInfoFile:
+        sys.exit("no device info file specified")
+    else:
+        print("using device info file: %s" % args.deviceInfoFile)
 
     # read optional list of volumes to create
     volFile = args.volumeFile
