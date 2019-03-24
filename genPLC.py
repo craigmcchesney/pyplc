@@ -1,8 +1,8 @@
 import sys
+from abc import ABC, abstractmethod
 import csv
 import re
-from abc import ABC, abstractmethod
-
+import argparse
 
 class DeviceInfo:
     def __init__(self, name, tag, depGauge1, depGauge2, depPump1, depValve1, volume, depVol1, depVol2):
@@ -691,25 +691,44 @@ class DeviceHandler:
 
 def main():
 
+    # process command line
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--tags", help="list unique tag types for specified devices", action="store_true")
+    parser.add_argument("--deviceFile", help="file containing devices to generate")
+    parser.add_argument("--volumeFile", help="file containing volumes to generate")
+    args = parser.parse_args()
+
     # read optional list of volumes to create
-    try:
-        with open('./volumes-list.csv', newline='') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                DeviceHandler.volumes.append(row[0])
-            print("creating %d volume(s) in volumes list: %s" % (len(DeviceHandler.volumes), DeviceHandler.volumes))
-    except Exception as ex:
-        print(ex)
+    volFile = args.volumeFile
+    if volFile:
+        print("generating volumes containined in file: %s" % volFile)
+        try:
+            with open(volFile, newline='') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    DeviceHandler.volumes.append(row[0])
+                print("creating %d volume(s) in volumes list: %s" % (len(DeviceHandler.volumes), DeviceHandler.volumes))
+        except Exception as ex:
+            print(ex)
 
     # read optional list of devices to create
-    try:
-        with open('./device-list.csv', newline='') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                DeviceHandler.devices.append(row[0])
-            print("creating %d devices in device list: %s" % (len(DeviceHandler.devices), DeviceHandler.devices))
-    except Exception as ex:
-        print(ex)
+    devFile = args.deviceFile
+    if devFile:
+        print("generating devices containined in file: %s" % devFile)
+        try:
+            with open(devFile, newline='') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    DeviceHandler.devices.append(row[0])
+                print("creating %d devices in device list: %s" % (len(DeviceHandler.devices), DeviceHandler.devices))
+        except Exception as ex:
+            print(ex)
+
+        listTagsOnly = False
+        if args.tags:
+            listTagsOnly = True
+            print("printing unique tags for specified devices")
+            sys.exit("printing tags not yet implemented")
 
     with open('./device-info.csv', newline='') as f:
 
