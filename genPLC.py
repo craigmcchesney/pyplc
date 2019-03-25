@@ -5,7 +5,9 @@ import re
 import argparse
 
 class DeviceInfo:
+    
     def __init__(self, name, tag, depGauge1, depGauge2, depPump1, depValve1, volume, depVol1, depVol2):
+        
         self.name = name
         self.tag = tag
         self.depGauge1 = depGauge1
@@ -20,7 +22,10 @@ class DeviceInfo:
 
 # registers device class types with PlcDevice class for look up by tag
 def register(deviceClass):
+    
     PlcDevice.register(deviceClass.tag(), deviceClass)
+
+
     
 # abstract base class for plc devices
 class PlcDevice(ABC):
@@ -77,7 +82,6 @@ class PlcDevice(ABC):
 
     # return function block for plc code
     def plcFunctionBlock(self):
-#        return VgcValveFB(self.deviceInfo)
         className = self.plcFunctionBlockType()
         cls = globals()[className]
         return cls(self.deviceInfo)
@@ -86,6 +90,34 @@ class PlcDevice(ABC):
 
     @abstractmethod
     def plcFunctionBlockType(self):
+        pass
+
+
+
+    # return function block for sim code
+    def simFunctionBlock(self):
+        className = self.simFunctionBlockType()
+        cls = globals()[className]
+        return cls(self.deviceInfo)
+
+
+
+    @abstractmethod
+    def simFunctionBlockType(self):
+        pass
+
+
+
+    # return struct for sim code
+    def simStruct(self):
+        className = self.simStructType()
+        cls = globals()[className]
+        return cls(self.deviceInfo)
+
+
+
+    @abstractmethod
+    def simStructType(self):
         pass
 
 
@@ -102,6 +134,37 @@ class GaugeDevice(PlcDevice):
 
 class PumpDevice(PlcDevice):
     pass
+
+
+
+@register
+class VcnValveDevice(ValveDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "VCN";
+
+
+
+    def plcFunctionBlockType(self):
+        return "VcnValveFB"
+
+
+
+    def simFunctionBlockType(self):
+        return "SimVacuumValveFB"
+
+
+
+    def simStructType(self):
+        return "SimVacuumValveStruct"
 
 
 
@@ -126,8 +189,80 @@ class VgcValveDevice(ValveDevice):
 
 
 
+    def simFunctionBlockType(self):
+        return "SimVacuumValveFB"
+
+
+
+    def simStructType(self):
+        return "SimVacuumValveStruct"
+
+
+
+@register
+class VrcValveDevice(ValveDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "VRC";
+
+
+
+    def plcFunctionBlockType(self):
+        return "VrcValveFB"
+
+
+
+    def simFunctionBlockType(self):
+        return "SimVacuumValveFB"
+
+
+
+    def simStructType(self):
+        return "SimVacuumValveStruct"
+
+
+
 class ColdCathodeGaugeDevice(GaugeDevice):
     pass
+
+
+
+@register
+class Mks422GaugeDevice(ColdCathodeGaugeDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "MKS422";
+
+
+
+    def plcFunctionBlockType(self):
+        return "Mks422GaugeFB"
+
+
+
+    def simFunctionBlockType(self):
+        return "SimMks422GaugeFB"
+
+
+
+    def simStructType(self):
+        return "SimMks422GaugeStruct"
 
 
 
@@ -152,6 +287,16 @@ class Mks500GaugeDevice(ColdCathodeGaugeDevice):
 
 
 
+    def simFunctionBlockType(self):
+        return "SimMks500GaugeFB"
+
+
+
+    def simStructType(self):
+        return "SimMks500GaugeStruct"
+
+
+
 @register
 class Mks500EPGaugeDevice(ColdCathodeGaugeDevice):
 
@@ -170,6 +315,16 @@ class Mks500EPGaugeDevice(ColdCathodeGaugeDevice):
 
     def plcFunctionBlockType(self):
         return "Mks500EPGaugeFB"
+
+
+
+    def simFunctionBlockType(self):
+        return "SimMks500GaugeFB"
+
+
+
+    def simStructType(self):
+        return "SimMks500GaugeStruct"
 
 
 
@@ -194,6 +349,49 @@ class Mks275GaugeDevice(GaugeDevice):
 
 
 
+    def simFunctionBlockType(self):
+        return "SimMks275GaugeFB"
+
+
+
+    def simStructType(self):
+        return "SimMks275GaugeStruct"
+
+
+
+@register
+class Mks317GaugeDevice(GaugeDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "MKS317";
+
+
+
+    def plcFunctionBlockType(self):
+        return "Mks317GaugeFB"
+
+
+
+    # TODO: what is function block type for MKS_317?
+    def simFunctionBlockType(self):
+        pass
+        #return "FB_MKS_275"
+
+
+
+    def simStructType(self):
+        return "SimMks317GaugeStruct"
+
+
+
 @register
 class PipGammaPumpDevice(PumpDevice):
 
@@ -215,23 +413,71 @@ class PipGammaPumpDevice(PumpDevice):
 
 
 
+    def simFunctionBlockType(self):
+         return "SimGamPipPumpFB"
+
+
+
+    def simStructType(self):
+        return "SimGamPipPumpStruct"
+
+
+    
+@register
+class PtmTwisTorrPumpFB(PumpDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "PTM_TWISTORR";
+
+
+
+    def plcFunctionBlockType(self):
+        return "PtmTwisTorrPumpFB"
+
+
+    # TODO: sim function block type?
+    def simFunctionBlockType(self):
+        pass
+         #return "FB_GAM_PIP"
+
+
+
+    # TODO: sim struct type?
+    def simStructType(self):
+        pass
+        #return "ST_GAM_PIP"
+
+
+    
 # abstract base class for plc code objects
 class PlcObject(ABC):
 
 
     
+    def __init__(self, deviceInfo):
+        self.container = None
+
+
+        
     @abstractmethod
     def declaration(self):
         pass
 
 
     
-    @abstractmethod
-    def code(self):
-        pass
+    def simpleDeclaration(self):
+        return self.objectName() + " : " + self.oType() + PlcGenerator.terminator
 
 
-
+    
     @abstractmethod
     def objectName(self):
         pass
@@ -253,7 +499,13 @@ class PlcFunctionBlock(PlcObject):
 
 
     @abstractmethod
-    def fbType(self):
+    def oType(self):
+        pass
+
+
+
+    @abstractmethod
+    def code(self):
         pass
 
 
@@ -264,26 +516,34 @@ class PlcFunctionBlock(PlcObject):
 
     
     def declaration(self):
-        return self.fbName + " : " + self.fbType() + PlcGenerator.terminator
+        return self.simpleDeclaration()
 
 
 
-class ValveFB(PlcFunctionBlock):
-    pass
+class VcnValveFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+    # TODO: what value for i_ReqPos
+    def code(self):
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "i_xExtIlkOK := TRUE, i_ReqPos := TODO" +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+    
+
+    def oType(self):
+        return "FB_VCN";
 
 
 
-class GaugeFB(PlcFunctionBlock):
-    pass
-
-
-
-class PumpFB(PlcFunctionBlock):
-    pass
-
-
-
-class VgcValveFB(ValveFB):
+class VgcValveFB(PlcFunctionBlock):
 
 
     
@@ -295,8 +555,8 @@ class VgcValveFB(ValveFB):
 
 
     def code(self):
-        upGauge = PlcContainer.getFB(self.upstreamGauge)
-        downGauge = PlcContainer.getFB(self.downstreamGauge)
+        upGauge = self.container.getFB(self.upstreamGauge)
+        downGauge = self.container.getFB(self.downstreamGauge)
         if ((not upGauge) or (not downGauge)):
             sys.exit("unable to find upGauge: %s or downGauge: %s" % (self.upstreamGauge, self.downstreamGauge))
         return (self.fbName +
@@ -312,12 +572,34 @@ class VgcValveFB(ValveFB):
 
     
 
-    def fbType(self):
+    def oType(self):
         return "FB_VGC";
 
 
 
-class ColdCathodeGaugeFB(GaugeFB):
+class VrcValveFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def code(self):
+        return (self.fbName +
+                "i_xExtILK_OK := TRUE, i_xOverrideMode := xSystemOverrideMode" +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+    
+
+    def oType(self):
+        return "FB_VRC";
+
+
+
+class ColdCathodeGaugeFB(PlcFunctionBlock):
 
 
     
@@ -328,7 +610,7 @@ class ColdCathodeGaugeFB(GaugeFB):
 
 
     def code(self):
-        ionGauge = PlcContainer.getFB(self.ionGauge)
+        ionGauge = self.container.getFB(self.ionGauge)
         if ((not ionGauge)):
             sys.exit("unable to find ion gauge: %s" % self.ionGauge)
         return (self.fbName +
@@ -340,6 +622,20 @@ class ColdCathodeGaugeFB(GaugeFB):
     
 
     
+class Mks422GaugeFB(ColdCathodeGaugeFB):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def oType(self):
+        return "FB_MKS422";
+
+
+
 class Mks500GaugeFB(ColdCathodeGaugeFB):
 
 
@@ -349,7 +645,7 @@ class Mks500GaugeFB(ColdCathodeGaugeFB):
 
 
 
-    def fbType(self):
+    def oType(self):
         return "FB_MKS500";
 
 
@@ -363,12 +659,12 @@ class Mks500EPGaugeFB(ColdCathodeGaugeFB):
 
 
 
-    def fbType(self):
+    def oType(self):
         return "FB_MKS500_EP";
 
 
 
-class Mks275GaugeFB(GaugeFB):
+class Mks275GaugeFB(PlcFunctionBlock):
 
 
     
@@ -385,12 +681,34 @@ class Mks275GaugeFB(GaugeFB):
                 PlcGenerator.terminator)
     
 
-    def fbType(self):
+    def oType(self):
         return "FB_MKS275";
 
 
 
-class PipGammaPumpFB(PumpFB):
+class Mks317GaugeFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def code(self):
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "PG=>" +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+    
+
+    def oType(self):
+        return "FB_MKS317";
+
+
+
+class PipGammaPumpFB(PlcFunctionBlock):
 
 
     
@@ -401,7 +719,7 @@ class PipGammaPumpFB(PumpFB):
 
 
     def code(self):
-        ccGauge = PlcContainer.getFB(self.ccGauge)
+        ccGauge = self.container.getFB(self.ccGauge)
         if ((not ccGauge)):
             # TODO: exit if dependencies don't exist?
             sys.exit("unable to find cold cathode gauge: %s" % self.ccGauge)
@@ -413,8 +731,347 @@ class PipGammaPumpFB(PumpFB):
                 PlcGenerator.terminator)
     
 
-    def fbType(self):
+    def oType(self):
         return "FB_PIP_GAMMA";
+
+
+
+class PtmTwisTorrPumpFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def code(self):
+        return (self.fbName +
+                PlcGenerator.openParen +
+                PlcGenerator.closeParen +
+                "i_xExtILKOk := TRUE" +
+                PlcGenerator.terminator)
+    
+
+    def oType(self):
+        return "FB_PTM_TwisTorr";
+
+
+
+class SimVacuumValveFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+        self.upstreamVolume = deviceInfo.depVol1
+        self.downstreamVolume = deviceInfo.depVol2
+        self.valve = deviceInfo.name
+
+
+
+    def code(self):
+        upVol = self.container.getStruct(self.upstreamVolume)
+        downVol = self.container.getStruct(self.downstreamVolume)
+        valve = self.container.getStruct(self.valve)
+        if ((not upVol) or (not downVol) or (not valve)):
+            sys.exit("unable to find upVol: %s downVol: %s or valve: %s" %
+                     (self.upstreamVolume, self.downstreamVolume, self.valve))
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "stAVol := " +
+                upVol.structName +
+                ", stBvol := " +
+                downVol.structName +
+                ", stValve := " +
+                valve.structName +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+    
+
+    def oType(self):
+        return "FB_VacuumValve";
+
+
+
+class SimGaugeFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+        self.volume = deviceInfo.volume
+        self.gauge = deviceInfo.name
+
+
+
+    def code(self):
+        volume = self.container.getStruct(self.volume)
+        gauge = self.container.getStruct(self.gauge)
+        if ((not volume) or (not gauge)):
+            sys.exit("unable to find volume: %s or gauge: %s" % (self.volume, self.gauge))
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "stVolume := " +
+                volume.structName +
+                ", stGauge := " +
+                gauge.structName +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+    
+
+class SimMks422GaugeFB(SimGaugeFB):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def oType(self):
+        return "FB_MKS_422";
+
+
+
+
+class SimMks500GaugeFB(SimGaugeFB):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def oType(self):
+        return "FB_MKS_500";
+
+
+
+
+class SimMks275GaugeFB(SimGaugeFB):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def oType(self):
+        return "FB_MKS_275";
+
+
+
+
+class SimMks317GaugeFB(SimGaugeFB):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def oType(self):
+        pass
+        #return "FB_MKS_317";
+
+
+
+
+class SimGamPipPumpFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+        self.volume = deviceInfo.volume
+        self.pip = deviceInfo.name
+
+
+
+    def code(self):
+        volume = self.container.getStruct(self.volume)
+        pip = self.container.getStruct(self.pip)
+        if ((not volume) or (not pip)):
+            sys.exit("unable to find volume: %s or pip: %s" % (self.volume, self.pip))
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "stVolume := " +
+                volume.structName +
+                ", stPip := " +
+                pip.structName +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+    
+
+    def oType(self):
+        return "FB_GAM_PIP";
+
+
+
+# abstract base class for structs
+class PlcStruct(PlcObject):
+
+    prefixSt = "st_"
+
+    def __init__(self, deviceInfo):
+        self.structName = self.prefixSt + deviceInfo.name.replace("-", "_")
+
+
+    def objectName(self):
+        return self.structName
+
+
+
+class SimVolumeStruct(PlcStruct):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def declaration(self):
+        return (self.objectName() + " : " +
+                self.oType() + " := " +
+                PlcGenerator.openParen +
+                "rVolume := 1E3, rPressure := Global_Pressure, rVLeak := Global_Leak" +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+
+
+    def oType(self):
+        return "ST_Volume";
+
+
+
+class SimVacuumValveStruct(PlcStruct):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def declaration(self):
+        return (self.objectName() + " : " +
+                self.oType() + " := " +
+                PlcGenerator.openParen +
+                "q_xClsLS := TRUE, q_xOpnLS := FALSE" +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+
+
+    def oType(self):
+        return "ST_VacuumValve";
+
+
+
+class SimGaugeStruct(PlcStruct):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def declaration(self):
+        return (self.objectName() + " : " +
+                self.oType() + " := " +
+                PlcGenerator.openParen +
+                "q_xGaugeConnected := TRUE" +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+
+
+class SimMks422GaugeStruct(SimGaugeStruct):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def oType(self):
+        return "ST_MKS_422";
+
+
+
+
+class SimMks500GaugeStruct(SimGaugeStruct):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def oType(self):
+        return "ST_MKS_500";
+
+
+
+
+class SimMks317GaugeStruct(SimGaugeStruct):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def oType(self):
+        return "ST_MKS_317";
+
+
+
+
+class SimMks275GaugeStruct(SimGaugeStruct):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def oType(self):
+        return "ST_MKS_275";
+
+
+
+
+class SimGamPipPumpStruct(PlcStruct):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def declaration(self):
+        return self.simpleDeclaration()
+
+    
+
+    def oType(self):
+        return "ST_GAM_PIP";
 
 
 
@@ -488,75 +1145,120 @@ class ProgramDocument(PlcDocument):
 class PlcContainer:
 
 
-    
-    # maps with document name key to document object value
-    varDocs = {}
-    progDocs = {}
-    
-    # key is device name, value is map of plc object type to plc object instance
-    # e.g., "TV3K0-VGC-1" -> {"fb" -> (instance of VgcValveFB))
-    # for device dependency lookup
-    plcDeviceMap = {}
 
     otypeFB = "fb"
+    otypeStruct = "st"
+
+
+    
+    def __init__(self):
+        
+        # maps with document name key to document object value
+        self.varDocs = {}
+        self.progDocs = {}
+
+        # key is device name, value is map of plc object type to plc object instance
+        # e.g., "TV3K0-VGC-1" -> {"fb" -> (instance of VgcValveFB))
+        # for device dependency lookup
+        self.plcDeviceMap = {}
 
     
 
-    @classmethod
-    def addToVariablesDocument(cls, docName, otype, lines):
-        if (not docName in cls.varDocs):
-            cls.varDocs[docName] = VariableDocument(docName)
-        document = cls.varDocs[docName]
+    def addToVariablesDocument(self, docName, otype, lines):
+        if (not docName in self.varDocs):
+            self.varDocs[docName] = VariableDocument(docName)
+        document = self.varDocs[docName]
         document.addContent(otype, lines)
 
 
 
-    @classmethod
-    def addToProgramDocument(cls, docName, otype, lines):
-        if (not docName in cls.progDocs):
-            cls.progDocs[docName] = ProgramDocument(docName)
-        document = cls.progDocs[docName]
+    def addToProgramDocument(self, docName, otype, lines):
+        if (not docName in self.progDocs):
+            self.progDocs[docName] = ProgramDocument(docName)
+        document = self.progDocs[docName]
         document.addContent(otype, lines)
 
 
 
-    @classmethod
-    def hasFB(cls, deviceName):
-        return ((deviceName in cls.plcDeviceMap) and
-                (cls.otypeFB in cls.plcDeviceMap[deviceName]))
-
-
-
-    @classmethod
-    def addFB(cls, deviceName, fbObj):
-        if not deviceName in cls.plcDeviceMap:
-            cls.plcDeviceMap[deviceName] = {}
-        else:
-            # device shouldn't already be in map
-            sys.exit("%s already in plcDeviceMap" % (deviceName))
-        if cls.otypeFB in cls.plcDeviceMap[deviceName]:
-            # shouldn't already be a function block in the map for this device
+    def addPlcObj(self, deviceName, plcType, plcObj):
+        
+        if not deviceName in self.plcDeviceMap:
+            self.plcDeviceMap[deviceName] = {}
+            
+        if plcType in self.plcDeviceMap[deviceName]:
+            # shouldn't already be a plc object in the map of this type for this device
             sys.exit("function block for %s already in plcDeviceMap" % (deviceName))
         else:          
-            devObjMap = cls.plcDeviceMap[deviceName]
-            devObjMap[cls.otypeFB] = fbObj
+            devObjMap = self.plcDeviceMap[deviceName]
+            devObjMap[plcType] = plcObj
+            plcObj.container = self
             return True
 
 
 
-    @classmethod
-    def getFB(cls, deviceName):
-        if ((not deviceName in cls.plcDeviceMap) or
-            (not cls.otypeFB in cls.plcDeviceMap[deviceName])):
+    def hasPlcObj(self, deviceName, plcType):
+        return ((deviceName in self.plcDeviceMap) and
+                (plcType in self.plcDeviceMap[deviceName]))
+
+
+
+    def getPlcObj(self, deviceName, plcType):
+        if ((not deviceName in self.plcDeviceMap) or
+            (not plcType in self.plcDeviceMap[deviceName])):
             return None
         else:
-            devObjMap = cls.plcDeviceMap[deviceName]
-            return devObjMap[cls.otypeFB]
+            devObjMap = self.plcDeviceMap[deviceName]
+            return devObjMap[plcType]
+        
+    def hasFB(self, deviceName):
+        return self.hasPlcObj(deviceName, self.otypeFB)
+
+
+
+    def addFB(self, deviceName, fbObj):
+        return self.addPlcObj(deviceName, self.otypeFB, fbObj)
+        
+
+
+    def getFB(self, deviceName):
+        return self.getPlcObj(deviceName, self.otypeFB)
+
+
+
+    def addStruct(self, deviceName, structObj):
+        return self.addPlcObj(deviceName, self.otypeStruct, structObj)
+
+
+
+    def hasStruct(self, deviceName):
+        return self.hasPlcObj(deviceName, self.otypeStruct)
+
+
+
+    def getStruct(self, deviceName):
+        return self.getPlcObj(deviceName, self.otypeStruct)
+
+
+
+class SimContainer(PlcContainer):
+
+
+    
+    def __init__(self):
+        super().__init__()
+        self.volumes = []
+
+
+
+    def addVolume(self, volume):
+        self.volumes.append(volume)
 
 
 
 class PlcGenerator:
 
+
+    
     openParen = "("
     closeParen = ")"
     terminator = ";"
@@ -564,31 +1266,23 @@ class PlcGenerator:
 
 
     @classmethod
-    def generate(cls):
-
-        cls.generatePlc()
-        cls.generateSim()
-
-
-        
-    @classmethod
-    def generatePlc(cls):
+    def generatePlc(cls, container):
 
         # iterate through devices and create plc objects organized into files
         for devName in DeviceContainer.deviceList:
             device = DeviceContainer.deviceMap[devName]
             docName = device.volume()
 
-            plcFB = PlcContainer.getFB(devName)
+            plcFB = container.getFB(devName)
             
             decs = []
             decs.append(plcFB.pragma())
             decs.append(plcFB.declaration())
-            PlcContainer.addToVariablesDocument(docName, plcFB.fbType(), decs)
+            container.addToVariablesDocument(docName, plcFB.oType(), decs)
 
             code = []
             code.append(plcFB.code())
-            PlcContainer.addToProgramDocument(docName, plcFB.fbType(), code)
+            container.addToProgramDocument(docName, plcFB.oType(), code)
 
         # set up ordering of devices by type
         deviceOrdering = []
@@ -599,22 +1293,72 @@ class PlcGenerator:
         deviceOrdering.append({"type":"FB_PIP_GAMMA", "label":"PIP_Gamma Pumps"})
         
         # write variables documents
-        for docName, document in PlcContainer.varDocs.items():
+        for docName, document in container.varDocs.items():
             with open('gen.plc.GVL_' + docName.upper(), 'w') as f:
                 document.writeToFile(f, deviceOrdering)
 
         # write program documents
-        for docName, document in PlcContainer.progDocs.items():
+        for docName, document in container.progDocs.items():
             with open('gen.plc.PRG_' + docName.upper(), 'w') as f:
                 document.writeToFile(f, deviceOrdering)
 
                 
     @classmethod
-    def generateSim(cls):
-        pass
+    def generateSim(cls, container):
 
+        # iterate through volumes and add declarations for volume structs
+        for volName in container.volumes:
+            
+            volStruct = container.getStruct(volName)
+            decs = []
+            decs.append(volStruct.declaration())
+            container.addToVariablesDocument(volName, volStruct.oType(), decs)
 
-    
+        # iterate through devices and create plc objects organized into files
+        for devName in DeviceContainer.deviceList:
+            
+            device = DeviceContainer.deviceMap[devName]
+            docName = device.volume()
+
+            # add declarations for structs
+            
+            struct = container.getStruct(devName)
+
+            decs = []
+            decs.append(struct.declaration())
+            container.addToVariablesDocument(docName, struct.oType(), decs)
+
+            # add declarations and code for function blocks
+            
+            fb = container.getFB(devName)
+            
+            decs = []
+            decs.append(fb.declaration())
+            container.addToVariablesDocument(docName, fb.oType(), decs)
+
+            code = []
+            code.append(fb.code())
+            container.addToProgramDocument(docName, fb.oType(), code)
+
+        # # set up ordering of devices by type
+        deviceOrdering = []
+        # deviceOrdering.append({"type":"FB_MKS275", "label":"MKS275 Gauges"})
+        # deviceOrdering.append({"type":"FB_MKS500", "label":"MKS500 Gauges"})
+        # deviceOrdering.append({"type":"FB_MKS500_EP", "label":"MKS500_EP Gauges"})
+        # deviceOrdering.append({"type":"FB_VGC", "label":"VGC Valves"})
+        # deviceOrdering.append({"type":"FB_PIP_GAMMA", "label":"PIP_Gamma Pumps"})
+        
+        # write variables documents
+        for docName, document in container.varDocs.items():
+            with open('gen.sim.GVL_' + docName.upper(), 'w') as f:
+                document.writeToFile(f, deviceOrdering)
+
+        # write program documents
+        for docName, document in container.progDocs.items():
+            with open('gen.sim.PRG_' + docName.upper(), 'w') as f:
+                document.writeToFile(f, deviceOrdering)
+
+                
 class DeviceHandler:
 
 
@@ -626,7 +1370,7 @@ class DeviceHandler:
 
     
     @classmethod
-    def handleDevice(cls, rowCount, info, listTagsOnly=False):
+    def handleDevice(cls, rowCount, info, plcContainer, simContainer, listTagsOnly=False):
         
         iName = info["Device Name"]
         iTag = info["PLC Tag"].upper()
@@ -665,9 +1409,28 @@ class DeviceHandler:
                 if (not device):
                     sys.exit("no device created for row %d: %s" % (rowCount, info))
                 else:
+
+                    # store device
                     DeviceContainer.addDevice(iName, device)
+
+                    # store plc objects
                     plcFB = device.plcFunctionBlock()
-                    PlcContainer.addFB(iName, plcFB)
+                    plcContainer.addFB(iName, plcFB)
+
+                    # store sim objects
+
+                    if not simContainer.hasStruct(device.volume()):
+                        volumeInfo = DeviceInfo(device.volume(),
+                                                "SIMVOLUME", "", "", "", "", device.volume(), "", "")
+                        volumeStruct = SimVolumeStruct(volumeInfo)
+                        simContainer.addStruct(device.volume(), volumeStruct)
+                        simContainer.addVolume(device.volume())
+                    
+                    simStruct = device.simStruct()
+                    simContainer.addStruct(iName, simStruct)
+                    
+                    simFB = device.simFunctionBlock()
+                    simContainer.addFB(iName, simFB)
            
 
         
@@ -740,6 +1503,7 @@ def main():
         except Exception as ex:
             print(ex)
 
+    # if this flag is specified, we only want to list the unique tag types, don't generate anything
     listTagsOnly = False
     if args.tags:
         listTagsOnly = True
@@ -747,17 +1511,25 @@ def main():
         print("printing unique tags for specified devices")
         print()
 
+    # create PLC and sim containers
+    plcContainer = PlcContainer()
+    simContainer = SimContainer()
+
     with open(args.deviceInfoFile, newline='') as f:
 
         rowCount = 0
         reader = csv.DictReader(f)
 
+        # generate devices, plc objects, and sim objects
         for row in reader:
             rowCount = rowCount + 1
-            DeviceHandler.handleDevice(rowCount, row, listTagsOnly=listTagsOnly)
+            DeviceHandler.handleDevice(rowCount, row, plcContainer, simContainer, listTagsOnly=listTagsOnly)
 
-        PlcGenerator.generate()
-        
+        # generate plc and sim code
+        PlcGenerator.generatePlc(plcContainer)
+        PlcGenerator.generateSim(simContainer)
+
+        # print summary
         DeviceHandler.printResult(listTagsOnly=listTagsOnly)
 
 
