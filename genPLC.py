@@ -380,10 +380,8 @@ class Mks317GaugeDevice(GaugeDevice):
 
 
 
-    # TODO: what is function block type for MKS_317?
     def simFunctionBlockType(self):
-        pass
-        #return "FB_MKS_275"
+        return "SimMks275GaugeFB"
 
 
 
@@ -424,7 +422,38 @@ class PipGammaPumpDevice(PumpDevice):
 
     
 @register
-class PtmTwisTorrPumpFB(PumpDevice):
+class EbaraDryPumpDevice(PumpDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "EBARADRYPUMP";
+
+
+
+    def plcFunctionBlockType(self):
+        return "EbaraDryPumpFB"
+
+
+
+    def simFunctionBlockType(self):
+         return "SimRoughPumpFB"
+
+
+
+    def simStructType(self):
+        return "SimGamPipPumpStruct"
+
+
+    
+@register
+class PtmTwisTorrPumpDevice(PumpDevice):
 
 
     
@@ -443,10 +472,8 @@ class PtmTwisTorrPumpFB(PumpDevice):
         return "PtmTwisTorrPumpFB"
 
 
-    # TODO: sim function block type?
     def simFunctionBlockType(self):
-        pass
-         #return "FB_GAM_PIP"
+        return "SimTurboPumpFB"
 
 
 
@@ -528,11 +555,10 @@ class VcnValveFB(PlcFunctionBlock):
         super().__init__(deviceInfo)
 
 
-    # TODO: what value for i_ReqPos
     def code(self):
         return (self.fbName +
                 PlcGenerator.openParen +
-                "i_xExtIlkOK := TRUE, i_ReqPos := TODO" +
+                "i_xExtIlkOK := TRUE, i_ReqPos := 0" +
                 PlcGenerator.closeParen +
                 PlcGenerator.terminator)
 
@@ -555,16 +581,37 @@ class VgcValveFB(PlcFunctionBlock):
 
 
     def code(self):
-        upGauge = self.container.getFB(self.upstreamGauge)
-        downGauge = self.container.getFB(self.downstreamGauge)
-        if ((not upGauge) or (not downGauge)):
-            sys.exit("unable to find upGauge: %s or downGauge: %s" % (self.upstreamGauge, self.downstreamGauge))
+
+        # check upstream gauge dependency for placeholder
+        if self.upstreamGauge.startswith("?blank"):
+            # replace placeholder with empty dependency, used for devices at boundary
+            upstr = ""
+        else:
+            upGauge = self.container.getFB(self.upstreamGauge)
+            if upGauge:
+                upstr = upGauge.fbName + ".IG"
+            else:
+                sys.exit("%s: unable to find upGauge: %s" % (self.fbName,
+                                                             self.upstreamGauge))
+            
+        # check downstream gauge dependency for placeholder
+        if self.downstreamGauge.startswith("?blank"):
+            # replace placeholder with empty dependency, used for devices at boundary
+            downstr = ""
+        else:
+            downGauge = self.container.getFB(self.downstreamGauge)
+            if downGauge:
+                downstr = downGauge.fbName + ".IG"
+            else:
+                sys.exit("%s: unable to find downGauge: %s" % (self.fbName,
+                                                               self.downstreamGauge))
+            
         return (self.fbName +
                 PlcGenerator.openParen +
                 "i_stUSG := " +
-                upGauge.fbName + ".IG" +
+                upstr +
                 ", i_stDSG := " +
-                downGauge.fbName + ".IG" +
+                downstr +
                 ", i_xDis_DPIlk := FALSE, i_xEPS_OK := TRUE, i_xPMPS_OK := TRUE," +
                 " i_xExt_OK := TRUE, i_xOverrideMode := xSystemOverrideMode" +
                 PlcGenerator.closeParen +
@@ -588,6 +635,7 @@ class VrcValveFB(PlcFunctionBlock):
 
     def code(self):
         return (self.fbName +
+                PlcGenerator.openParen +
                 "i_xExtILK_OK := TRUE, i_xOverrideMode := xSystemOverrideMode" +
                 PlcGenerator.closeParen +
                 PlcGenerator.terminator)
@@ -736,6 +784,35 @@ class PipGammaPumpFB(PlcFunctionBlock):
 
 
 
+class EbaraDryPumpFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+        self.bpGauge = deviceInfo.depGauge1 # adjacent pirani gauge
+
+
+
+    def code(self):
+        bpGauge = self.container.getFB(self.bpGauge)
+        if ((not bpGauge)):
+            sys.exit("%s: unable to find pirani gauge: %s" % (self.fbName,
+                                                              self.bpGauge))
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "i_stBPGauge := " +
+                bpGauge.fbName + ".PG" +
+                ", i_xVlvOpn := TRUE, i_xExtIlkOK := TRUE" + 
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+    
+
+    def oType(self):
+        return "FB_EbaraDryPump";
+
+
+
 class PtmTwisTorrPumpFB(PlcFunctionBlock):
 
 
@@ -748,8 +825,8 @@ class PtmTwisTorrPumpFB(PlcFunctionBlock):
     def code(self):
         return (self.fbName +
                 PlcGenerator.openParen +
-                PlcGenerator.closeParen +
                 "i_xExtILKOk := TRUE" +
+                PlcGenerator.closeParen +
                 PlcGenerator.terminator)
     
 
@@ -1294,12 +1371,12 @@ class PlcGenerator:
         
         # write variables documents
         for docName, document in container.varDocs.items():
-            with open('gen.plc.GVL_' + docName.upper(), 'w') as f:
+            with open('gen.plc.GVL_' + docName.upper().replace("-", "_"), 'w') as f:
                 document.writeToFile(f, deviceOrdering)
 
         # write program documents
         for docName, document in container.progDocs.items():
-            with open('gen.plc.PRG_' + docName.upper(), 'w') as f:
+            with open('gen.plc.PRG_' + docName.upper().replace("-", "_"), 'w') as f:
                 document.writeToFile(f, deviceOrdering)
 
                 
@@ -1350,12 +1427,12 @@ class PlcGenerator:
         
         # write variables documents
         for docName, document in container.varDocs.items():
-            with open('gen.sim.GVL_' + docName.upper(), 'w') as f:
+            with open('gen.sim.GVL_' + docName.upper().replace("-", "_"), 'w') as f:
                 document.writeToFile(f, deviceOrdering)
 
         # write program documents
         for docName, document in container.progDocs.items():
-            with open('gen.sim.PRG_' + docName.upper(), 'w') as f:
+            with open('gen.sim.PRG_' + docName.upper().replace("-", "_"), 'w') as f:
                 document.writeToFile(f, deviceOrdering)
 
                 
@@ -1370,7 +1447,7 @@ class DeviceHandler:
 
     
     @classmethod
-    def handleDevice(cls, rowCount, info, plcContainer, simContainer, listTagsOnly=False):
+    def handleDevice(cls, rowCount, info, plcContainer, simContainer, options):
         
         iName = info["Device Name"]
         iTag = info["PLC Tag"].upper()
@@ -1396,7 +1473,7 @@ class DeviceHandler:
             if ((not iVolume) or (len(iVolume) == 0)):
                 sys.exit("missing volume for row %d: %s" % (rowCount, info))
 
-            if listTagsOnly:
+            if options.listTagsOnly:
                 cls.deviceTypes.add(iTag)
 
             else:
@@ -1414,32 +1491,36 @@ class DeviceHandler:
                     DeviceContainer.addDevice(iName, device)
 
                     # store plc objects
-                    plcFB = device.plcFunctionBlock()
-                    plcContainer.addFB(iName, plcFB)
+                    if not options.simOnly:
+                        plcFB = device.plcFunctionBlock()
+                        plcContainer.addFB(iName, plcFB)
 
                     # store sim objects
+                    if not options.plcOnly:
 
-                    if not simContainer.hasStruct(device.volume()):
-                        volumeInfo = DeviceInfo(device.volume(),
-                                                "SIMVOLUME", "", "", "", "", device.volume(), "", "")
-                        volumeStruct = SimVolumeStruct(volumeInfo)
-                        simContainer.addStruct(device.volume(), volumeStruct)
-                        simContainer.addVolume(device.volume())
-                    
-                    simStruct = device.simStruct()
-                    simContainer.addStruct(iName, simStruct)
-                    
-                    simFB = device.simFunctionBlock()
-                    simContainer.addFB(iName, simFB)
+                        volName = device.volume()
+                        if not simContainer.hasStruct(volName):
+                            volumeInfo = DeviceInfo(volName,
+                                                    "SIMVOLUME", "", "", "", "",
+                                                    volName, "", "")
+                            volumeStruct = SimVolumeStruct(volumeInfo)
+                            simContainer.addStruct(volName, volumeStruct)
+                            simContainer.addVolume(volName)
+
+                        simStruct = device.simStruct()
+                        simContainer.addStruct(iName, simStruct)
+
+                        simFB = device.simFunctionBlock()
+                        simContainer.addFB(iName, simFB)
            
 
         
 
 
     @classmethod
-    def printResult(cls, listTagsOnly=False):
+    def printResult(cls, options):
 
-        if listTagsOnly:
+        if options.listTagsOnly:
             
             # print all unique devices
             for dtype in sorted(cls.deviceTypes):
@@ -1453,6 +1534,18 @@ class DeviceHandler:
         
 
 
+class Options:
+
+
+
+    def __init__(self):
+        
+        self.listTagsOnly = False
+        self.plcOnly = False
+        self.simOnly = False
+ 
+
+        
 def main():
 
     # process command line
@@ -1462,9 +1555,13 @@ def main():
                                                        "PLC dep gauge2, PLC dep pump1, PLC dep valve1, " +
                                                        "Volume, sim dep vol1, sim dep vol2"))
     parser.add_argument("--tags", help="list unique tag types for specified devices", action="store_true")
+    parser.add_argument("--plc", help="generate plc artifacts only", action="store_true")
+    parser.add_argument("--sim", help="generate sim artifacts only", action="store_true")
     parser.add_argument("--deviceFile", help="file containing devices to generate")
     parser.add_argument("--volumeFile", help="file containing volumes to generate")
     args = parser.parse_args()
+
+    options = Options()
 
     # make sure devInfo input file is specified
     if not args.deviceInfoFile:
@@ -1504,11 +1601,22 @@ def main():
             print(ex)
 
     # if this flag is specified, we only want to list the unique tag types, don't generate anything
-    listTagsOnly = False
     if args.tags:
-        listTagsOnly = True
+        options.listTagsOnly = True
         print()
         print("printing unique tags for specified devices")
+        print()
+
+    # for the plc and sim flags, we will generate only the corresponding artifacts
+    if args.plc:
+        options.plcOnly = True
+        print()
+        print("generating plc artifacts only")
+        print()
+    elif args.sim:
+        options.simOnly = True
+        print()
+        print("generating sim artifacts only")
         print()
 
     # create PLC and sim containers
@@ -1523,14 +1631,16 @@ def main():
         # generate devices, plc objects, and sim objects
         for row in reader:
             rowCount = rowCount + 1
-            DeviceHandler.handleDevice(rowCount, row, plcContainer, simContainer, listTagsOnly=listTagsOnly)
+            DeviceHandler.handleDevice(rowCount, row, plcContainer, simContainer, options)
 
         # generate plc and sim code
-        PlcGenerator.generatePlc(plcContainer)
-        PlcGenerator.generateSim(simContainer)
+        if not options.simOnly:
+            PlcGenerator.generatePlc(plcContainer)
+        if not options.plcOnly:
+            PlcGenerator.generateSim(simContainer)
 
         # print summary
-        DeviceHandler.printResult(listTagsOnly=listTagsOnly)
+        DeviceHandler.printResult(options)
 
 
 
