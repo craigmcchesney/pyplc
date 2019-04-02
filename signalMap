@@ -1,0 +1,10 @@
+FB_VGC,q_xOPN_DO,i_xSol
+FB_VGC,i_xOpnLS,q_xOpnLS
+FB_VGC,i_xClsLS,q_xClsLS
+FB_MKS500,i_iPRESS_R,q_iRawPress
+FB_MKS500,i_xHV_ON,q_xHVOn
+FB_MKS500,i_xDisc_Active,q_DisActive
+FB_MKS500,q_xHV_DIS,i_xHvOn
+FB_MKS275,i_iPRESS_R,q_iRawPress
+FB_PIP_Gamma,q_xHVEna_DO,xOn
+FB_PIP_Gamma,i_xSP_DI,?unmapped
