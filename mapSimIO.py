@@ -13,6 +13,7 @@ class Options:
         
         self.projFile = ""
         self.plcName = ""
+        self.simName = ""
         self.simTaskPrefix = ""
         self.simDevicePrefix = ""
         self.variableMapFile = ""
@@ -27,6 +28,8 @@ def main():
     parser.add_argument("projFile", help="twincat tsproj xml input file")
     parser.add_argument("plcName",
                         help="twincat name of plc e.g. 'TIPC^XtesSxrPlc^XtesSxrPlc Instance'")
+    parser.add_argument("simName",
+                        help="twincat name of sim plc e.g. 'TIPC^ProtoSimPLC^ProtoSimPLC Instance'")
     parser.add_argument("simTaskPrefix",
                         help="twincat task name for sim e.g. 'SimTask'")
     parser.add_argument("simDevicePrefix",
@@ -56,6 +59,14 @@ def main():
         print()
         print("using plcName: %s" % args.plcName)
         options.plcName = args.plcName
+
+    # make sure simName is specified
+    if not args.simName:
+        sys.exit("no simName specified")
+    else:
+        print()
+        print("using simName: %s" % args.simName)
+        options.simName = args.simName
 
     # make sure simTaskPrefix is specified
     if not args.simTaskPrefix:
@@ -125,13 +136,25 @@ def main():
     except Exception as ex:
         sys.exit("exception parsing project file: " + ex)
 
-    # find the plc variable mappings
     root = tree.getroot()
+    mappingRoot = root.find("./Mappings")
+    if not mappingRoot:
+        sys.exit("project file doesn't contain a 'Mappings' section")
+
+    # find the plc variable mappings
     plcMap = root.findall("./Mappings/OwnerA[@Name='%s']" % options.plcName)
     if len(plcMap) != 1:
         sys.exit("found %d matches in project file for plc: %s" %
                  (len(plcMap), options.plcName))
     plcMap = plcMap[0]
+
+    # exit if there are already sim variable mappings, otherwise create a new section for the mappings
+    simMap = root.findall("./Mappings/OwnerA[@Name='%s']" % options.simName)
+    if len(simMap) != 0:
+        sys.exit("found existing variable mappings for sim: %s" % (options.simName))
+    else:
+        simMap = ET.SubElement(mappingRoot, 'OwnerA')
+        simMap.set("Name", options.simName)
     
     for deviceMap in plcMap.findall("OwnerB"):
         
@@ -142,23 +165,34 @@ def main():
         if ind == -1:
             sys.exit("unexpected device name format: %s" % deviceName)
         deviceName = deviceName[ind+1:]
-        
-        #print("mappings for device: %s" % deviceName)
+
+        # create name for io device node and add it to the simMap container
         simDeviceName = options.simDevicePrefix + deviceName
-        print("mapping to sim device: %s" % simDeviceName)
+        deviceNode = ET.SubElement(simMap, 'OwnerB')
+        deviceNode.set("Name", simDeviceName)
+
+        #print(simDeviceName)
         
         for varLink in deviceMap.findall("Link"):
             plcVar = varLink.attrib['VarA']
             ioLink = varLink.attrib['VarB']
-            print()
-            print("\tVarA plc: %s" % plcVar)
-            #print("\t\tto: %s" % ioLink)
 
-            # strip off prefix
+            # strip off task name / and "Inputs" or "Outputs", but first use to determine
+            # whether to link to the sim's inputs or output (opposite of the plc value)
             ind = plcVar.find('^')
             if ind == -1:
                 sys.exit("unexpected plc variable format: %s" % plcVar)
+            inoutSpec = plcVar[0:ind]
+            if "Inputs" in inoutSpec:
+                inoutSpec = "Outputs"
+            elif "Outputs" in inoutSpec:
+                inoutSpec = "Inputs"
+            else:
+                sys.exit("unexpected plc task prefix format: %s" % inoutSpec)
             plcVar = plcVar[ind+1:]
+
+            # create sim task prefix with "Inputs" or "Outputs" appended as appropriate
+            simTaskInoutPrefix = options.simTaskPrefix + " " + inoutSpec
 
             # get plc var name tokens (doc name, variable name, and usually signal name)
             varTokens = plcVar.split('.')
@@ -166,15 +200,12 @@ def main():
                 docName = varTokens[0]
                 varName = varTokens[1]
                 sigName = varTokens[2]
-            elif len(varTokens) == 2:
-                docName = varTokens[0]
-                varName = varTokens[1]
+            # elif len(varTokens) == 2:
+            #     docName = varTokens[0]
+            #     varName = varTokens[1]
             else:
                 sys.exit("unexpected plc variable format: %s" % plcVar)
 
-
-            #print("%s %s %s" % (docName, varName, sigName))
-            
             # get plc data type and sim variable for plc variable
             if not varName in variableMap:
                 sys.exit("no variable mapping found for %s" % varName)
@@ -194,17 +225,16 @@ def main():
 
             plcSignal = signalData[sigName]
 
-            varASim = docName + "." + simVar + "." + plcSignal
+            varASim = simTaskInoutPrefix + "^" + docName + "." + simVar + "." + plcSignal
 
+            #print("\tVarA: %s VarB: %s" % (varASim, ioLink))
 
+            linkNode = ET.SubElement(deviceNode, 'Link')
+            linkNode.set("VarA", varASim)
+            linkNode.set("VarB", ioLink)
 
-            # TODO: need to prefix VarASim with simTaskPrefix + "Inputs" or "Outputs"
-
-
-                  
-
-            print("\tVarA sim: %s" % varASim)
-            print("\tVarB: %s" % ioLink)
+    ET.dump(simMap)
+    tree.write(options.projFile)
 
 if __name__ == '__main__':
     main()
