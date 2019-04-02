@@ -17,7 +17,6 @@ class Options:
         self.simTaskPrefix = ""
         self.simDevicePrefix = ""
         self.variableMapFile = ""
-        self.signalMapFile = ""
  
 
         
@@ -55,8 +54,6 @@ def main():
                         help="twincat device prefix for sim e.g. 'TIID^Device 2 (EtherCAT Simulation)^'")
     parser.add_argument("variableMapFile",
                         help="csv file from generator with plc variable, data type, and sim variable")
-    parser.add_argument("signalMapFile",
-                        help="csv file with plc data type, plc signal name, and sim signal name")
 #    parser.add_argument("--plc", help="generate plc artifacts only", action="store_true")
 #    parser.add_argument("--deviceFile", help="file containing devices to generate")
     args = parser.parse_args()
@@ -111,14 +108,6 @@ def main():
         print("using variableMapFile: %s" % args.variableMapFile)
         options.variableMapFile = args.variableMapFile
 
-    # make sure signalMapFile is specified
-    if not args.signalMapFile:
-        sys.exit("no signalMapFile specified")
-    else:
-        print()
-        print("using signalMapFile: %s" % args.signalMapFile)
-        options.signalMapFile = args.signalMapFile
-
     # read variable map
     variableMap = {}
     try:
@@ -134,20 +123,21 @@ def main():
     except Exception as ex:
         sys.exit("error opening variable map file: %s" % ex)
 
-    # read signal map
-    signalMap = {}
-    try:
-        with open(options.signalMapFile, newline='') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                plcType = row[0]
-                if plcType not in signalMap:
-                    signalMap[plcType] = {}
-                signalData = signalMap[plcType]
-                signalData[row[1]] = row[2]
-            print("signal map file contains %d" % (len(signalMap)))
-    except Exception as ex:
-        sys.exit("error opening signal map file: %s" % ex)
+    signalMap = {
+        "FB_VGC" : {
+            "q_xOPN_DO" : "i_xSol",
+            "i_xOpnLS" : "q_xOpnLS",
+            "i_xClsLS" : "q_xClsLS"},
+        "FB_MKS500" : {
+            "i_iPRESS_R" : "q_iRawPress",
+            "i_xHV_ON" : "q_xHVOn",
+            "i_xDisc_Active" : "q_DisActive",
+            "q_xHV_DIS" : "i_xHvOn"},
+        "FB_MKS275" : {
+            "i_iPRESS_R" : "q_iRawPress"},
+        "FB_PIP_Gamma" : {
+            "q_xHVEna_DO" : "xOn",
+            "i_xSP_DI" : "?unmapped"}}
 
     # parse xml project file
     try:
