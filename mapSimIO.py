@@ -21,6 +21,25 @@ class Options:
  
 
         
+def indent(elem, level=0):
+    # borrowed from http://effbot.org/zone/element-lib.htm#prettyprint
+    
+    i = "\n" + level*"\t"
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "\t"
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
+
+
+
 def main():
 
     # process command line
@@ -215,17 +234,16 @@ def main():
             simVar = variableData['simVar']
 
             # get sim signal name for plc signal name
-            
             if not plcType in signalMap:
                 sys.exit("no type mapping found for type: %s" % (plcType))
-
             signalData = signalMap[plcType]
             if sigName not in signalData:
-                sys.exit("no signal mapping found for signal: %s" % sigName)
+                sys.exit("no signal mapping found for type: %s signal: %s" % (plcType, sigName))
+            simSignal = signalData[sigName]
+            if simSignal == "?unmapped": # don't map this signal to the sim
+                continue
 
-            plcSignal = signalData[sigName]
-
-            varASim = simTaskInoutPrefix + "^" + docName + "." + simVar + "." + plcSignal
+            varASim = simTaskInoutPrefix + "^" + docName + "." + simVar + "." + simSignal
 
             #print("\tVarA: %s VarB: %s" % (varASim, ioLink))
 
@@ -234,6 +252,7 @@ def main():
             linkNode.set("VarB", ioLink)
 
     ET.dump(simMap)
+    indent(root)
     tree.write(options.projFile)
 
 if __name__ == '__main__':
