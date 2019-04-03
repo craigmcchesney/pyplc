@@ -18,3 +18,23 @@ To run the generator using the device info and volumes csv files created above:
 ```
 python genPLC.py --volumeFile ./volumes-list.gmd.csv ./device-info.gmd.csv --plc
 ```
+Note the --plc option tells the generator to produce code for the controls PLC only, skipping generation of the simulation artifacts.  Continuing the example above for the specified volumes, this produces the following files:
+```
+gen.plc.GVL_EM1K0_GMD_VGC_1
+gen.plc.GVL_GMD
+gen.plc.GVL_TV1K0_GAS_VGC_1
+gen.plc.PRG_EM1K0_GMD_VGC_1
+gen.plc.PRG_GMD
+gen.plc.PRG_TV1K0_GAS_VGC_1
+```
+### create Twincat project for PLC
+* run VisualStudio/Twincat, and create a new project
+* from the "PLC" menu, use "Library Repository" to install the 3 SLAC-provided PLC libs, if they are not already present.  These are available in the github repo https://github.com/craigmcchesney/SLAC_vacuum_libs . Install each library file using the Library Repository tool.
+* under "PLC" node in solution explorer, add a new item of type "standard plc project"
+* expand the node for the new plc project, right click on "References", and select "add library", for both the "LCLS General" and "L2SI Vacuum Library" that you installed using the library repository, in the selection dialog these appear under the node labeled "Miscellaneous"
+* for each file created by the generator with the "gen.plc." prefix, create corresponding Twincat documents with the content from the generated files.  For each file with a "GVL_" prefix, add a new "Global Variable List" under the GVLs node of the PLC project.  For the GVL documents, be sure to remove the line at the top of the Twincat GVL file "{attribute 'qualified_only'}" so that variable references can be made from PLC programs without qualifying them using the GVL document name.  For the files with "PRG_" prefix, add a new POU element and select structured text program as the type.  The GVLs for the project should now include GVL_EM1K0_GMD_VGC_1, GVL_GMD, and GVL_TV1K0_GAS_VGC_1.  The POUs should include MAIN, PRG_EM1K0_GMD_VGC_1, PRG_GMD, and PRG_TV1K0_GAS_VGC_1.  Make sure to invoke each PRG_ file from the "MAIN" program as follows:
+```
+PRG_EM1K0_GMD_VGC_1();
+PRG_GMD();
+PRG_TV1K0_GAS_VGC_1();
+```
