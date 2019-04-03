@@ -41,3 +41,9 @@ PRG_TV1K0_GAS_VGC_1();
 Note that this step will probably be automated at some point so that the generator produces xml files that can be added to the new project directly, but for now the process is manual.
 * add another GVL called "GVL_VARIABLES", and add the line ``	xSystemOverrideMode : BOOL;`` in the "VAR_GLOBAL" section.
 * right click on the PLC project node and select "build", and ensure that the PLC builds without errors
+### save the PLC input/output variables to csv file
+* for feedback to the EPlan schematics, we need to dump the PLC input and output variable names to a CSV file.  This allows us to later import the EPlan xml file to 1) create the I/O devices for the PLC, and link the PLC variables to the I/O devices.
+* this step must be done after building the PLC project
+* to save the input variables, expand the "Instance" node of your PLC project and double-click "PlcTask Inputs".  This displays a list of the input variables.  Select all the items in the list, right click, and select "save item as".  Specify the location and filename for the csv file that will contain the input variables.
+* repeat the step above for the output variables, by double clicking on "PlcTask Outputs"
+* provide these files to the team member responsible for EPlan schematics, and ask them to provide you an EPlan xml export file.
