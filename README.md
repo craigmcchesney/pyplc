@@ -40,4 +40,4 @@ PRG_TV1K0_GAS_VGC_1();
 ```
 Note that this step will probably be automated at some point so that the generator produces xml files that can be added to the new project directly, but for now the process is manual.
 * add another GVL called "GVL_VARIABLES", and add the line ``	xSystemOverrideMode : BOOL;`` in the "VAR_GLOBAL" section.
-* right clock on the PLC project node and select "build", and ensure that the PLC builds without errors
+* right click on the PLC project node and select "build", and ensure that the PLC builds without errors
