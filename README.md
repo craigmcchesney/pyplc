@@ -14,4 +14,7 @@ GMD
 TV1K0-GAS-VGC-1
 ```
 ### run genPLC.py
+To run the generator using the device info and volumes csv files created above:
+```
 python genPLC.py --volumeFile ./volumes-list.gmd.csv ./device-info.gmd.csv --plc
+```
