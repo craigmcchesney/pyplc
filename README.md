@@ -46,7 +46,7 @@ Note that this step will probably be automated at some point so that the generat
 * this step must be done after building the PLC project
 * to save the input variables, expand the "Instance" node of your PLC project and double-click "PlcTask Inputs".  This displays a list of the input variables.  Select all the items in the list, right click, and select "save item as".  Specify the location and filename for the csv file that will contain the input variables.
 * repeat the step above for the output variables, by double clicking on "PlcTask Outputs"
-* provide these files to the team member responsible for EPlan schematics, and ask them to provide you an EPlan xml export file.
+* provide these files AND THE NAME OF THE Twincat PLC, e.g., "GmdPlc" to the team member responsible for EPlan schematics, and ask them to provide you an EPlan xml export file.
 ### import xml file from EPlan using TC3 XCAD Interface
 * install both Beckhoff “TwinCAT XAE” and “TC3 XCAD Interface” executables
 ```
