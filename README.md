@@ -47,3 +47,55 @@ Note that this step will probably be automated at some point so that the generat
 * to save the input variables, expand the "Instance" node of your PLC project and double-click "PlcTask Inputs".  This displays a list of the input variables.  Select all the items in the list, right click, and select "save item as".  Specify the location and filename for the csv file that will contain the input variables.
 * repeat the step above for the output variables, by double clicking on "PlcTask Outputs"
 * provide these files to the team member responsible for EPlan schematics, and ask them to provide you an EPlan xml export file.
+### import xml file from EPlan
+* install both Beckhoff “TwinCAT XAE” and “TC3 XCAD Interface” executables
+```
+https://infosys.beckhoff.com/content/1033/tc3_installation/index.html?id=2757066571859226971 
+https://www.beckhoff.com/forms/twincat3/warenkorb2.aspx?id=1889849218918644160&lg=en&title=TE1120-TC3-XCAD-Interface&version=1.4.1.2 
+```
+* sync the PLC project repo from github:
+```
+https://github.com/craigmcchesney/XTES-SXR-vacuum-PLC-prototype 
+```
+* create a folder for the xcad import project
+* download the EPlan generated XML file that you want to import to your xcad project folder e.g., 
+```
+https://drive.google.com/file/d/133y2T59sPIvZixEH33l8fZKdpjWKky7Q/view 
+```
+* run “TwinCAT XAE” application which will run VisualStudio, and open the solution (sln file) inside the Twincat project folder that you synced from git, just to make sure the project loads
+  - generate a TwinCAT license inside the Twincat XAE app (VisualStudio).  To do this, expand the “XtesSxrPlcProto” node in the left window pane, then expand the child node “SYSTEM” and double-click child node “License”.  Click button “7 Days Trial License”. Enter captcha value and click OK.  This should cause licenses for both “TC3 PLC” and “TC3 XCAD Interface” (and possibly others) to be listed in the table at the bottom of the middle window pane.
+  - close XAE
+* run “TC3 XCAD Interface” application
+  - select “New Project” from File menu
+    * in the dialog that appears, for “Location”, browse to xcad project folder created above
+    * for “CAD export file”, select the xml file downloaded above
+    * for “TwinCAT project”, select the “sln” file in the XAE project folder synced from github
+    * click “Save” button
+  - a tree representation of the xml file is displayed in the left window pane
+  - from “Tools” menu, select “Settings”
+    * in left-side tree view, select “Transformation” child of “Settings”
+    * make sure “Generate PLC project” is set to “False” and click “OK”
+  - click the button with an arrow pointing to the right between the left and right window panes
+    * this runs a transformation and now a tree representation of the resulting “tci” file is displayed in the right window pane
+    * you can review the process output by click the “Output” tab at the bottom of the pane, and errors by clicking “Error List”.  The output should show messages about producing xml for each node, and the error list should be empty.
+  - open “TwinCATImportFile.tci” in the xcad project folder using notepad
+    * do “Find/Replace” to replace all occurrences of “XCAD_Interface_GVO.” (note the trailing period) with an empty string (leave “to” field blank)
+    * save the file, and click “Yes” to reload the local file instead of the one that xcad has been using
+    * close notepad
+  - select “ImportExport” from the tools menu
+    * click “Yes” button to save the “tci” file
+    * at this point, you can open the “tci” file in notepad and review the xml that will be imported to twincat.  You don’t need to do this but for experimental work you might want to
+    * select radio button “Import data to an existing TwinCAT project” and click “Next” button
+    * the path to the tci file should be displayed, check it and click “Next”
+    * the path to the TwinCAT project you selected in the “new project” dialog should be displayed, check that it is or select it if not, and click “Next”
+    * both paths are displayed for confirmation, review them and click “Next”
+    * a dialog appears with console showing output from import process
+    * the XAE/VisualStudio window opens, displaying the Twincat project
+    * once the process is complete, it displays the message “Import successfully completed. TwinCAT XAE will be closed now.  Save changes?”, regardless of whether the process was successful or not.
+    * and also regardless of whether the process succeeded or not, the “Yes” button will be disabled
+    * if you click “No”, the changes made by xcad to the twincat project will be lost
+use the scrollbar in the import dialog to review the output.  there shouldn’t be errors about creating children, but there might be messages about linking failed if there are EPlan variables that can’t be mapped to twincat variables (e.g. right now there are EPlan output signals for the VGC pumps like TV2K4_VGC_1.q_xCLS_DO that don’t exist in twincat)
+    * the best thing to do is open the windows task manager using “ctrl-alt-del”, and then force kill TC3XCADInterface application.
+  - click over to the XAE/VisualStudio, 
+    * review the xcad changes e.g., that devices were added under the I/O node at the bottom of the project, and that the “PlcTask Inputs/Outputs” under “XtesSxrPlc Instance” are linked to devices by double clicking on each device and checking that its “Linked to…” field shows a non-empty value.  Currently some variables do not get linked because they don’t exist in the EPlan schematic.  This varies by device and we are working to understand these.
+    * from “File” menu, select “save all” to save the changes
