@@ -101,7 +101,7 @@ use the scrollbar in the import dialog to review the output.  there shouldn’t 
     * review the xcad changes e.g., that devices were added under the I/O node at the bottom of the project, and that the “PlcTask Inputs/Outputs” under “XtesSxrPlc Instance” are linked to devices by double clicking on each device and checking that its “Linked to…” field shows a non-empty value.  Currently some variables do not get linked because they don’t exist in the EPlan schematic.  This varies by device and we are working to understand these.
     * from “File” menu, select “save all” to save the changes
 #### troubleshooting
-TC XCAD Interface is the worst tool ever created.  It crashes, fails for unspecified reasons, all lots of fun.  In the end, the crashes and failures usually claim that the user aborted the process but there is typically something about the input xml file that it's not happy about.
+TC XCAD Interface is the worst tool ever created.  It crashes, fails for unspecified reasons, all lots of fun.  In the end, the crashes and failures usually claim that the user aborted the process but there is typically something about the input xml file that it's not happy about.  There is usually some red herring message about gui or events at the bottom of the import console or log viewer, but if you scroll up to where the last element of xml is mentioned "creating child x of y", there is probably something about element x that xcad doesn't like.  I've found it useful to compare that element to its predecessor(s) and see what is different about the element that is failing.  That's how I discovered the 2 problems below.
 * in the most recent case, the following came up: had to remove all sections like:
        <Connection>
         <PreviousId>Y</PreviousId>
