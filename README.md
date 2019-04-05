@@ -78,6 +78,7 @@ https://drive.google.com/file/d/133y2T59sPIvZixEH33l8fZKdpjWKky7Q/view
   - click the button with an arrow pointing to the right between the left and right window panes
     * this runs a transformation and now a tree representation of the resulting “tci” file is displayed in the right window pane
     * you can review the process output by click the “Output” tab at the bottom of the pane, and errors by clicking “Error List”.  The output should show messages about producing xml for each node, and the error list should be empty.
+    * click the toolbar button to save the tci file
   - open “TwinCATImportFile.tci” in the xcad project folder using notepad
     * do “Find/Replace” to replace all occurrences of “XCAD_Interface_GVO.” (note the trailing period) (this could also be "XCAD_Interface_GVL.", it was GVO the first time I used the tool and GVL the 2nd) with an empty string (leave “to” field blank)
     * save the file, and click “Yes” to reload the local file instead of the one that xcad has been using
