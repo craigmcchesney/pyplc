@@ -108,7 +108,9 @@ TC XCAD Interface is the worst tool ever created.  It crashes, fails for unspeci
         <ConnectId>Y</ConnectId>
        </Connection>
 * in a previous case, I had to remove sections like this:
+```
 <EtherCAT><Slave><Info><PhysAddr>1004</PhysAddr><PhysAddrFixed>true</PhysAddrFixed></Info><PreviousPort Selected="true"><PhysAddr>1003</PhysAddr></PreviousPort></Slave></EtherCAT>
+```
 In the end, Pedro changed something in the schematics and the problem went away, but it took a VERRRRRY LONG TIME to figure out what was wrong.  
 ```
 The <PhysAddr>1003</PhysAddr> stuff was a variable in EPLAN that was filled out on some of the device when i placed them and thought i was necessary. These numbers seemed to impact the ordering and the tree structure of the PLC boxes when the xml to tci translation happened, so I number the box in order 1001 through 1006. I've deleted (left blank) these fields in EPLAN and now it seems to work.
