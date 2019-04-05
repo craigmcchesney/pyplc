@@ -100,3 +100,16 @@ use the scrollbar in the import dialog to review the output.  there shouldn’t 
   - click over to the XAE/VisualStudio, 
     * review the xcad changes e.g., that devices were added under the I/O node at the bottom of the project, and that the “PlcTask Inputs/Outputs” under “XtesSxrPlc Instance” are linked to devices by double clicking on each device and checking that its “Linked to…” field shows a non-empty value.  Currently some variables do not get linked because they don’t exist in the EPlan schematic.  This varies by device and we are working to understand these.
     * from “File” menu, select “save all” to save the changes
+#### troubleshooting
+TC XCAD Interface is the worst tool ever created.  It crashes, fails for unspecified reasons, all lots of fun.  In the end, the crashes and failures usually claim that the user aborted the process but there is typically something about the input xml file that it's not happy about.
+* in the most recent case, the following came up: had to remove all sections like:
+       <Connection>
+        <PreviousId>Y</PreviousId>
+        <ConnectId>Y</ConnectId>
+       </Connection>
+* in a previous case, I had to remove sections like this:
+<EtherCAT><Slave><Info><PhysAddr>1004</PhysAddr><PhysAddrFixed>true</PhysAddrFixed></Info><PreviousPort Selected="true"><PhysAddr>1003</PhysAddr></PreviousPort></Slave></EtherCAT>
+In the end, Pedro changed something in the schematics and the problem went away, but it took a VERRRRRY LONG TIME to figure out what was wrong.  
+```
+The <PhysAddr>1003</PhysAddr> stuff was a variable in EPLAN that was filled out on some of the device when i placed them and thought i was necessary. These numbers seemed to impact the ordering and the tree structure of the PLC boxes when the xml to tci translation happened, so I number the box in order 1001 through 1006. I've deleted (left blank) these fields in EPLAN and now it seems to work.
+```
