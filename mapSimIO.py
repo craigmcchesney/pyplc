@@ -157,10 +157,12 @@ def main():
                  (len(plcMap), options.plcName))
     plcMap = plcMap[0]
 
-    # exit if there are already sim variable mappings, otherwise create a new section for the mappings
+    # exit if there are already sim variable mappings,
+    #otherwise create a new section for the mappings
     simMap = root.findall("./Mappings/OwnerA[@Name='%s']" % options.simName)
     if len(simMap) != 0:
-        sys.exit("found existing variable mappings for sim: %s" % (options.simName))
+        sys.exit("found existing variable mappings for sim: %s" %
+                 (options.simName))
     else:
         simMap = ET.SubElement(mappingRoot, 'OwnerA')
         simMap.set("Name", options.simName)
@@ -180,8 +182,6 @@ def main():
         deviceNode = ET.SubElement(simMap, 'OwnerB')
         deviceNode.set("Name", simDeviceName)
 
-        #print(simDeviceName)
-        
         for varLink in deviceMap.findall("Link"):
             plcVar = varLink.attrib['VarA']
             ioLink = varLink.attrib['VarB']
@@ -209,9 +209,6 @@ def main():
                 docName = varTokens[0]
                 varName = varTokens[1]
                 sigName = varTokens[2]
-            # elif len(varTokens) == 2:
-            #     docName = varTokens[0]
-            #     varName = varTokens[1]
             else:
                 sys.exit("unexpected plc variable format: %s" % plcVar)
 
@@ -234,8 +231,6 @@ def main():
                 continue
 
             varASim = simTaskInoutPrefix + "^" + docName + "." + simVar + "." + simSignal
-
-            #print("\tVarA: %s VarB: %s" % (varASim, ioLink))
 
             linkNode = ET.SubElement(deviceNode, 'Link')
             linkNode.set("VarA", varASim)

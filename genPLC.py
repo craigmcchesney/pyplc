@@ -6,7 +6,7 @@ import argparse
 
 class DeviceInfo:
     
-    def __init__(self, name, tag, depGauge1, depGauge2, depPump1, depValve1, volume, depVol1, depVol2):
+    def __init__(self, name, tag, depGauge1, depGauge2, depPump1, depValve1, volume, depVol1, depVol2, progUnit):
         
         self.name = name
         self.tag = tag
@@ -17,6 +17,7 @@ class DeviceInfo:
         self.volume = volume
         self.depVol1 = depVol1
         self.depVol2 = depVol2
+        self.progUnit = progUnit
 
         
 
@@ -77,6 +78,11 @@ class PlcDevice(ABC):
 
     def volume(self):
         return self.deviceInfo.volume
+
+
+
+    def progUnit(self):
+        return self.deviceInfo.progUnit
 
 
 
@@ -448,7 +454,38 @@ class EbaraDryPumpDevice(PumpDevice):
 
 
     def simStructType(self):
-        return "SimGamPipPumpStruct"
+        return "SimMechPumpStruct"
+
+
+    
+@register
+class EbaraEvaPumpDevice(PumpDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "EBARAEVA";
+
+
+
+    def plcFunctionBlockType(self):
+        return "EbaraEvaPumpFB"
+
+
+
+    def simFunctionBlockType(self):
+         return "SimRoughPumpFB"
+
+
+
+    def simStructType(self):
+        return "SimMechPumpStruct"
 
 
     
@@ -472,15 +509,14 @@ class PtmTwisTorrPumpDevice(PumpDevice):
         return "PtmTwisTorrPumpFB"
 
 
+    
     def simFunctionBlockType(self):
         return "SimTurboPumpFB"
 
 
 
-    # TODO: sim struct type?
     def simStructType(self):
-        pass
-        #return "ST_GAM_PIP"
+        return "SimMechPumpStruct"
 
 
     
@@ -591,8 +627,8 @@ class VgcValveFB(PlcFunctionBlock):
             if upGauge:
                 upstr = upGauge.fbName + ".IG"
             else:
-                sys.exit("%s: unable to find upGauge: %s" % (self.fbName,
-                                                             self.upstreamGauge))
+                sys.exit("device %s: unable to find upGauge: %s" %
+                         (self.objectName(), self.upstreamGauge))
             
         # check downstream gauge dependency for placeholder
         if self.downstreamGauge.startswith("?blank"):
@@ -603,8 +639,8 @@ class VgcValveFB(PlcFunctionBlock):
             if downGauge:
                 downstr = downGauge.fbName + ".IG"
             else:
-                sys.exit("%s: unable to find downGauge: %s" % (self.fbName,
-                                                               self.downstreamGauge))
+                sys.exit("device %s: unable to find downGauge: %s" %
+                         (self.objectName(), self.downstreamGauge))
             
         return (self.fbName +
                 PlcGenerator.openParen +
@@ -660,7 +696,8 @@ class ColdCathodeGaugeFB(PlcFunctionBlock):
     def code(self):
         ionGauge = self.container.getFB(self.ionGauge)
         if ((not ionGauge)):
-            sys.exit("unable to find ion gauge: %s" % self.ionGauge)
+            sys.exit("device %s: unable to find ion gauge: %s" %
+                     (self.objectName(), self.ionGauge))
         return (self.fbName +
                 PlcGenerator.openParen +
                 "PG := " +
@@ -770,7 +807,8 @@ class PipGammaPumpFB(PlcFunctionBlock):
         ccGauge = self.container.getFB(self.ccGauge)
         if ((not ccGauge)):
             # TODO: exit if dependencies don't exist?
-            sys.exit("unable to find cold cathode gauge: %s" % self.ccGauge)
+            sys.exit("device %s: unable to find cold cathode gauge: %s" %
+                     (self.objectName(), self.ccGauge))
         return (self.fbName +
                 PlcGenerator.openParen +
                 "i_stGauge := " +
@@ -797,8 +835,8 @@ class EbaraDryPumpFB(PlcFunctionBlock):
     def code(self):
         bpGauge = self.container.getFB(self.bpGauge)
         if ((not bpGauge)):
-            sys.exit("%s: unable to find pirani gauge: %s" % (self.fbName,
-                                                              self.bpGauge))
+            sys.exit("device %s: unable to find pirani gauge: %s" %
+                     (self.objectName(), self.bpGauge))
         return (self.fbName +
                 PlcGenerator.openParen +
                 "i_stBPGauge := " +
@@ -810,6 +848,28 @@ class EbaraDryPumpFB(PlcFunctionBlock):
 
     def oType(self):
         return "FB_EbaraDryPump";
+
+
+
+class EbaraEvaPumpFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def code(self):
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "i_xExtIlkOK := TRUE" + 
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+    
+
+    def oType(self):
+        return "FB_EbaraEVA";
 
 
 
@@ -848,12 +908,12 @@ class SimVacuumValveFB(PlcFunctionBlock):
 
 
     def code(self):
-        upVol = self.container.getStruct(self.upstreamVolume)
-        downVol = self.container.getStruct(self.downstreamVolume)
+        upVol = self.container.getVolumeStruct(self.upstreamVolume)
+        downVol = self.container.getVolumeStruct(self.downstreamVolume)
         valve = self.container.getStruct(self.valve)
         if ((not upVol) or (not downVol) or (not valve)):
-            sys.exit("unable to find upVol: %s downVol: %s or valve: %s" %
-                     (self.upstreamVolume, self.downstreamVolume, self.valve))
+            sys.exit("device %s: unable to find upVol: %s downVol: %s or valve: %s" %
+                     (self.objectName(), self.upstreamVolume, self.downstreamVolume, self.valve))
         return (self.fbName +
                 PlcGenerator.openParen +
                 "stAVol := " +
@@ -884,10 +944,11 @@ class SimGaugeFB(PlcFunctionBlock):
 
 
     def code(self):
-        volume = self.container.getStruct(self.volume)
+        volume = self.container.getVolumeStruct(self.volume)
         gauge = self.container.getStruct(self.gauge)
         if ((not volume) or (not gauge)):
-            sys.exit("unable to find volume: %s or gauge: %s" % (self.volume, self.gauge))
+            sys.exit("device %s: unable to find volume: %s or gauge: %s" %
+                     (self.objectName(), self.volume, self.gauge))
         return (self.fbName +
                 PlcGenerator.openParen +
                 "stVolume := " +
@@ -972,10 +1033,11 @@ class SimGamPipPumpFB(PlcFunctionBlock):
 
 
     def code(self):
-        volume = self.container.getStruct(self.volume)
+        volume = self.container.getVolumeStruct(self.volume)
         pip = self.container.getStruct(self.pip)
         if ((not volume) or (not pip)):
-            sys.exit("unable to find volume: %s or pip: %s" % (self.volume, self.pip))
+            sys.exit("device %s: unable to find volume: %s or pip: %s" %
+                     (self.objectName(), self.volume, self.pip))
         return (self.fbName +
                 PlcGenerator.openParen +
                 "stVolume := " +
@@ -989,6 +1051,76 @@ class SimGamPipPumpFB(PlcFunctionBlock):
 
     def oType(self):
         return "FB_GAM_PIP";
+
+
+
+class SimRoughPumpFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+        self.volume = deviceInfo.volume
+        self.pump = deviceInfo.name
+
+
+
+    def code(self):
+        volume = self.container.getVolumeStruct(self.volume)
+        pump = self.container.getStruct(self.pump)
+        if ((not volume) or (not pump)):
+            sys.exit("device %s: unable to find volume: %s or pump: %s" %
+                     (self.objectName(), self.volume, self.pump))
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "stVolInlet := " +
+                volume.structName +
+                ", stPump := " +
+                pump.structName +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+    
+
+    def oType(self):
+        return "FB_RoughPump";
+
+
+
+class SimTurboPumpFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+        self.inVol = deviceInfo.depVol1
+        self.outVol = deviceInfo.depVol2
+        self.pump = deviceInfo.name
+
+
+
+    def code(self):
+        inVol = self.container.getVolumeStruct(self.inVol)
+        outVol = self.container.getVolumeStruct(self.outVol)
+        pump = self.container.getStruct(self.pump)
+        if ((not inVol) or (not outVol) or (not pump)):
+            sys.exit("device %s: unable to find inVol: %s outVol: %s or pump: %s" %
+                     (self.objectName(), self.inVol, self.outVol, self.pump))
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "stVlInlet := " +
+                inVol.structName +
+                ", stVlOutlet := " +
+                outVol.structName +
+                ", stPump := " +
+                pump.structName +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+    
+
+    def oType(self):
+        return "FB_TurboPump";
 
 
 
@@ -1133,6 +1265,25 @@ class SimMks275GaugeStruct(SimGaugeStruct):
 
 
 
+class SimMechPumpStruct(PlcStruct):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def declaration(self):
+        return self.simpleDeclaration()
+
+    
+
+    def oType(self):
+        return "ST_MechPump";
+
+
+
 class SimGamPipPumpStruct(PlcStruct):
     
 
@@ -1225,6 +1376,7 @@ class PlcContainer:
 
     otypeFB = "fb"
     otypeStruct = "st"
+    otypeVolume = "vol"
 
 
     
@@ -1257,6 +1409,12 @@ class PlcContainer:
 
 
 
+    def addDevice(self, deviceName, deviceObj):
+        plcFB = deviceObj.plcFunctionBlock()
+        self.addFB(deviceName, plcFB)
+
+
+
     def addPlcObj(self, deviceName, plcType, plcObj):
         
         if not deviceName in self.plcDeviceMap:
@@ -1264,7 +1422,7 @@ class PlcContainer:
             
         if plcType in self.plcDeviceMap[deviceName]:
             # shouldn't already be a plc object in the map of this type for this device
-            sys.exit("function block for %s already in plcDeviceMap" % (deviceName))
+            sys.exit("object of type: %s device: %s already in plcDeviceMap" % (plcType, deviceName))
         else:          
             devObjMap = self.plcDeviceMap[deviceName]
             devObjMap[plcType] = plcObj
@@ -1327,8 +1485,51 @@ class SimContainer(PlcContainer):
 
 
 
-    def addVolume(self, volume):
-        self.volumes.append(volume)
+    def addVolume(self, volName, progUnit):
+
+        # add a simulation volume struct for this volume
+        volumeInfo = DeviceInfo(volName,
+                                "SIMVOLUME", "", "", "", "",
+                                volName, "", "", progUnit)
+        volumeStruct = SimVolumeStruct(volumeInfo)
+        self.addVolumeStruct(volName, volumeStruct)
+
+        # add the volume's info to list for sequential access
+        self.volumes.append(volumeInfo)
+
+
+
+    def addVolumeStruct(self, volName, volumeStruct):
+        return self.addPlcObj(volName, self.otypeVolume, volumeStruct)
+
+
+
+    def hasVolumeStruct(self, volName):
+        return self.hasPlcObj(volName, self.otypeVolume)
+
+
+
+    def getVolumeStruct(self, volName):
+        return self.getPlcObj(volName, self.otypeVolume)
+
+
+
+    # add simulation objects for this device
+    def addDevice(self, deviceName, device):
+
+        # create volumes associated with the device that don't yet exist
+        for volName in [device.volume(), device.deviceInfo.depVol1, device.deviceInfo.depVol2]:
+            if volName and volName != "":
+                if not self.hasVolumeStruct(volName):
+                    self.addVolume(volName, device.deviceInfo.progUnit)
+
+        # add a simulation struct object for the device
+        simStruct = device.simStruct()
+        self.addStruct(deviceName, simStruct)
+
+        # add a simulation function block object for the device
+        simFB = device.simFunctionBlock()
+        self.addFB(deviceName, simFB)
 
 
 
@@ -1348,7 +1549,7 @@ class PlcGenerator:
         # iterate through devices and create plc objects organized into files
         for devName in DeviceContainer.deviceList:
             device = DeviceContainer.deviceMap[devName]
-            docName = device.volume()
+            docName = device.progUnit()
 
             plcFB = container.getFB(devName)
             
@@ -1384,18 +1585,21 @@ class PlcGenerator:
     def generateSim(cls, container):
 
         # iterate through volumes and add declarations for volume structs
-        for volName in container.volumes:
+        for volInfo in container.volumes:
+
+            volName = volInfo.name
+            volStruct = container.getVolumeStruct(volName)
             
-            volStruct = container.getStruct(volName)
             decs = []
             decs.append(volStruct.declaration())
-            container.addToVariablesDocument(volName, volStruct.oType(), decs)
+            progUnit = volInfo.progUnit
+            container.addToVariablesDocument(progUnit, volStruct.oType(), decs)
 
         # iterate through devices and create plc objects organized into files
         for devName in DeviceContainer.deviceList:
             
             device = DeviceContainer.deviceMap[devName]
-            docName = device.volume()
+            docName = device.progUnit()
 
             # add declarations for structs
             
@@ -1440,7 +1644,7 @@ class DeviceHandler:
 
 
 
-    volumes = []
+    progUnits = []
     devices = []
     deviceTypes = set()
 
@@ -1448,7 +1652,8 @@ class DeviceHandler:
     
     @classmethod
     def handleDevice(cls, rowCount, info, plcContainer, simContainer, options):
-        
+
+        iProgUnit = info["PLC prog unit"]
         iName = info["Device Name"]
         iTag = info["PLC Tag"].upper()
         iDepGauge1 = info["PLC dep gauge1"]
@@ -1460,18 +1665,18 @@ class DeviceHandler:
         iDepVol2 = info["sim dep vol2"]
 
         # if we have a non-empty device list, only create the devices it contains
-        if (((not len(cls.devices)) and (not len(cls.volumes))) or
+        if (((not len(cls.devices)) and (not len(cls.progUnits))) or
             ((len(cls.devices)) and (iName in cls.devices)) or
-            ((len(cls.volumes)) and (iVolume in cls.volumes))):
+            ((len(cls.progUnits)) and (iProgUnit in cls.progUnits))):
 
             if ((not iName) or (len(iName) == 0)):
                 sys.exit("no iName provided for row %d: %s" % (rowCount, info))
 
+            # we are ignoring rows that don't have a tag, this allows the device info table to
+            # contain devices that are out of scope of the plc, but generate a warning just in case:
             if ((not iTag) or (len(iTag) == 0)):
-                sys.exit("missing plc tag for row %d: %s" % (rowCount, info))
-
-            if ((not iVolume) or (len(iVolume) == 0)):
-                sys.exit("missing volume for row %d: %s" % (rowCount, info))
+                print("skipping row with missing plc tag, row %d: %s" % (rowCount, info))
+                return
 
             if options.listTagsOnly:
                 cls.deviceTypes.add(iTag)
@@ -1479,7 +1684,7 @@ class DeviceHandler:
             else:
 
                 devInfo = DeviceInfo(iName, iTag, iDepGauge1, iDepGauge2, iDepPump1,
-                                     iDepValve1, iVolume, iDepVol1, iDepVol2)
+                                     iDepValve1, iVolume, iDepVol1, iDepVol2, iProgUnit)
 
                 device = PlcDevice.createDevice(iTag, devInfo)
 
@@ -1492,31 +1697,14 @@ class DeviceHandler:
 
                     # store plc objects
                     if not options.simOnly:
-                        plcFB = device.plcFunctionBlock()
-                        plcContainer.addFB(iName, plcFB)
+                        plcContainer.addDevice(iName, device)
 
                     # store sim objects
                     if not options.plcOnly:
-
-                        volName = device.volume()
-                        if not simContainer.hasStruct(volName):
-                            volumeInfo = DeviceInfo(volName,
-                                                    "SIMVOLUME", "", "", "", "",
-                                                    volName, "", "")
-                            volumeStruct = SimVolumeStruct(volumeInfo)
-                            simContainer.addStruct(volName, volumeStruct)
-                            simContainer.addVolume(volName)
-
-                        simStruct = device.simStruct()
-                        simContainer.addStruct(iName, simStruct)
-
-                        simFB = device.simFunctionBlock()
-                        simContainer.addFB(iName, simFB)
+                        simContainer.addDevice(iName, device)
            
 
         
-
-
     @classmethod
     def printResult(cls, options):
 
@@ -1558,7 +1746,7 @@ def main():
     parser.add_argument("--plc", help="generate plc artifacts only", action="store_true")
     parser.add_argument("--sim", help="generate sim artifacts only", action="store_true")
     parser.add_argument("--deviceFile", help="file containing devices to generate")
-    parser.add_argument("--volumeFile", help="file containing volumes to generate")
+    parser.add_argument("--progUnitsFile", help="file containing program units to generate")
     args = parser.parse_args()
 
     options = Options()
@@ -1571,17 +1759,17 @@ def main():
         print("using device info file: %s" % args.deviceInfoFile)
 
     # read optional list of volumes to create
-    volFile = args.volumeFile
-    if volFile:
+    progUnitsFile = args.progUnitsFile
+    if progUnitsFile:
         print()
-        print("using volumes file: %s" % volFile)
+        print("using program units file: %s" % progUnitsFile)
         try:
-            with open(volFile, newline='') as f:
+            with open(progUnitsFile, newline='') as f:
                 reader = csv.reader(f)
                 for row in reader:
-                    DeviceHandler.volumes.append(row[0])
-                print("volumes file contains %d volume(s): %s" % (len(DeviceHandler.volumes),
-                                                                  DeviceHandler.volumes))
+                    DeviceHandler.progUnits.append(row[0])
+                print("program units file contains %d unit(s): %s" %
+                      (len(DeviceHandler.progUnits), DeviceHandler.progUnits))
         except Exception as ex:
             print(ex)
 
