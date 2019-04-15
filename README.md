@@ -2,30 +2,37 @@
 Contains two python programs, genPLC.py and mapSimIO.py.  The first takes a tabular device information table, and generates Beckhoff Twincat PLC code utilizing the vacuum device library created at SLAC.  The second takes output from genPLC.py, plus the Twincat tsproj xml file, and links the simulation PLC's variables to the simulated EtherCAT I/O devices, according to the links from the controls PLC's variable to I/O links.
 
 ## genPLC.py
+### edit device info file
+* for each device in the scope of the generator, edit the columns for capturing dependencies on other plc or sim devices (TODO: need to document each device)
 ### download device info file
 * Find the device information table (e.g., https://drive.google.com/drive/folders/1PX-yMYoACvApI5ir16ePVcxCfJ65B_pj), and download the PLC worksheet as a csv file
-* delete extra rows above the column headers, so the first row contains the columns: Area,Device Name,Device,PLC Tag,PLC dep gauge1,PLC dep gauge2,PLC dep pump1,PLC dep valve1,Volume,sim dep vol1,sim dep vol2
+* make sure the first row contains the columns: Area,PLC prog unit,Device Name,Device,PLC Tag,PLC dep gauge1,PLC dep gauge2,PLC dep pump1,PLC dep valve1,Volume,sim dep vol1,sim dep vol2 (column order doesn't matter)
 * add device dependency placeholders for devices at boundary of section that you are going to generate code for, e.g., for the GMD, change the gauge 1 dependency for EM1K0-GMD-VGC-1 to ?blank#RTDS-GCC-1 and the gauge 2 dependency for TV1K0-GAS-VGC-1 to ?blank#AT1K0_GAS_GCC_10 . This tells the generator to create code that doesn't have a link to the target of the dependency since it is out of the scope of the generator.
-### edit volumes list file
-* create a csv file with one column and no headings that contains a list of the volumes that are in the scope of the generator - other volumes will be ignored, e.g.
+### edit prog units file
+* create a csv file with one column and no headings that contains a list of the program units that are in the scope of the generator - other units will be ignored, e.g.
 ```
-EM1K0-GMD-VGC-1
 GMD
-TV1K0-GAS-VGC-1
 ```
 ### run genPLC.py
-To run the generator using the device info and volumes csv files created above:
+To run the generator using the device info and volumes csv files created above, to create just plc artifacts:
 ```
-python genPLC.py --volumeFile ./volumes-list.gmd.csv ./device-info.gmd.csv --plc
+python genPLC.py --progUnitsFile ./progUnits.gmd.csv ./device-info.gmd.csv --plc
 ```
-Note the --plc option tells the generator to produce code for the controls PLC only, skipping generation of the simulation artifacts.  Continuing the example above for the specified volumes, this produces the following files:
+To run the generator using the device info and volumes csv files created above, to create just sim artifacts:
 ```
-gen.plc.GVL_EM1K0_GMD_VGC_1
+python genPLC.py --progUnitsFile ./progUnits.gmd.csv ./device-info.gmd.csv --sim
+```
+To run the generator using the device info and volumes csv files created above, to create plc and sim artifacts:
+```
+python genPLC.py --progUnitsFile ./progUnits.gmd.csv ./device-info.gmd.csv
+```
+Running the generator to create both plc and sim artifacts for the "GMD" program unit produces the following files:
+```
 gen.plc.GVL_GMD
-gen.plc.GVL_TV1K0_GAS_VGC_1
-gen.plc.PRG_EM1K0_GMD_VGC_1
 gen.plc.PRG_GMD
-gen.plc.PRG_TV1K0_GAS_VGC_1
+gen.sim.GVL_GMD
+gen.sim.PRG_GMD
+gen.varMap
 ```
 ### create Twincat project for PLC
 * run VisualStudio/Twincat, and create a new project
