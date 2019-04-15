@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import csv
 import re
 import argparse
+import pickle
 
 class DeviceInfo:
     
@@ -1640,6 +1641,25 @@ class PlcGenerator:
                 document.writeToFile(f, deviceOrdering)
 
                 
+    @classmethod
+    def generateVarMap(cls, plcContainer, simContainer):
+
+        # iterate through devices, adding a map entry for each
+        simVarMap = {}
+        for devName in DeviceContainer.deviceList:
+            device = DeviceContainer.deviceMap[devName]
+            plcFB = plcContainer.getFB(devName)
+            simStruct = simContainer.getStruct(devName)          
+            variableData = {}
+            variableData['type'] = plcFB.oType()
+            variableData['simVar'] = simStruct.objectName()
+            simVarMap[devName] = variableData
+        
+        with open('gen.varMap', 'wb') as f:
+            pickle.dump(simVarMap, f, pickle.HIGHEST_PROTOCOL)
+
+        
+
 class DeviceHandler:
 
 
@@ -1826,6 +1846,9 @@ def main():
             PlcGenerator.generatePlc(plcContainer)
         if not options.plcOnly:
             PlcGenerator.generateSim(simContainer)
+
+        if not options.simOnly and not options.plcOnly:
+            PlcGenerator.generateVarMap(plcContainer, simContainer)
 
         # print summary
         DeviceHandler.printResult(options)

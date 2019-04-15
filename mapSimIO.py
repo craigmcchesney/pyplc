@@ -4,6 +4,7 @@ import csv
 import re
 import argparse
 import xml.etree.ElementTree as ET
+import pickle
 
 class Options:
 
@@ -111,14 +112,8 @@ def main():
     # read variable map
     variableMap = {}
     try:
-        with open(options.variableMapFile, newline='') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                plcVarName = row[0]
-                variableData = {}
-                variableData['type'] = row[1]
-                variableData['simVar'] = row[2]
-                variableMap[plcVarName] = variableData
+        with open(options.variableMapFile, 'rb') as f:
+            variableMap = pickle.load(f)
             print("variable map file contains %d variable(s)" % (len(variableMap)))
     except Exception as ex:
         sys.exit("error opening variable map file: %s" % ex)
