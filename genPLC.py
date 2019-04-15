@@ -1060,21 +1060,21 @@ class SimRoughPumpFB(PlcFunctionBlock):
     
     def __init__(self, deviceInfo):
         super().__init__(deviceInfo)
-        self.volume = deviceInfo.volume
+        self.inVol = deviceInfo.depVol1
         self.pump = deviceInfo.name
 
 
 
     def code(self):
-        volume = self.container.getVolumeStruct(self.volume)
+        inVol = self.container.getVolumeStruct(self.inVol)
         pump = self.container.getStruct(self.pump)
-        if ((not volume) or (not pump)):
-            sys.exit("device %s: unable to find volume: %s or pump: %s" %
-                     (self.objectName(), self.volume, self.pump))
+        if ((not inVol) or (not pump)):
+            sys.exit("device %s: unable to find inlet volume: %s or pump: %s" %
+                     (self.objectName(), self.inVol, self.pump))
         return (self.fbName +
                 PlcGenerator.openParen +
                 "stVolInlet := " +
-                volume.structName +
+                inVol.structName +
                 ", stPump := " +
                 pump.structName +
                 PlcGenerator.closeParen +
