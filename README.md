@@ -33,6 +33,7 @@ gen.plc.GVL_VARIABLES
 gen.plc.PRG_GMD
 gen.plc.PRG_MAIN
 gen.sim.GVL_GMD
+gen.sim.GVL_VARIABLES
 gen.sim.PRG_GMD
 gen.sim.PRG_MAIN
 gen.varMap
@@ -48,10 +49,8 @@ gen.varMap
 #### create simulation
 * under "PLC" node in solution explorer, add a new item of type "standard plc project", named "GmdSim"
 * expand the node for the new plc project, right click on "References", and select "add library".  Under "Miscellaneous", select "Vacuum System Simulator Library" that you installed above, and click "OK".
-* as was done for the files prefixed with "gen.plc" above, add GVL and PRG documens for the files prefixed with "gen.sim".  For each file with a "gen.sim.GVL_" prefix, add a new "Global Variable List" under the GVLs node of the sim project, and add the content from the generated file in the "VAR_GLOBAL" section.  For the GVL documents, be sure to remove the line at the top of the Twincat GVL file "{attribute 'qualified_only'}" so that variable references can be made from PLC programs without qualifying them using the GVL document name.  For the files with "gen.sim.PRG_" prefix, add a new POU element and select structured text program as the type and paste in the generated file's content as the program code.  For the file "gen.sim.MAIN", edit the already existing POU document "MAIN (PRG)", and add the file's content to the body of the program.  The GVLs for the simulation should now include GVL_GMD.  The POUs should include MAIN and PRG_GMD.
+* as was done for the files prefixed with "gen.plc" above, add GVL and PRG documens for the files prefixed with "gen.sim".  For each file with a "gen.sim.GVL_" prefix, add a new "Global Variable List" under the GVLs node of the sim project, and add the content from the generated file in the "VAR_GLOBAL" section.  For the GVL documents, be sure to remove the line at the top of the Twincat GVL file "{attribute 'qualified_only'}" so that variable references can be made from PLC programs without qualifying them using the GVL document name.  For the files with "gen.sim.PRG_" prefix, add a new POU element and select structured text program as the type and paste in the generated file's content as the program code.  For the file "gen.sim.MAIN", edit the already existing POU document "MAIN (PRG)", and add the file's content to the body of the program.  The GVLs for the simulation should now include GVL_GMD and GVL_VARIABLES.  The POUs should include MAIN and PRG_GMD.
 * right click on the PLC project node and select "build", and ensure that the PLC builds without errors### save the PLC input/output variables to csv file
-#### Twincat project configuration
-TODO: configure system / Real-TIme settings?
 #### provide feedback for EPlan schematics
 * for feedback to the EPlan schematics, we need to dump the PLC input and output variable names to a CSV file.  This allows us to later import the EPlan xml file to 1) create the I/O devices for the PLC, and link the PLC variables to the I/O devices.
 * this step must be done after building the PLC project
@@ -64,19 +63,23 @@ TODO: configure system / Real-TIme settings?
 https://infosys.beckhoff.com/content/1033/tc3_installation/index.html?id=2757066571859226971 
 https://www.beckhoff.com/forms/twincat3/warenkorb2.aspx?id=1889849218918644160&lg=en&title=TE1120-TC3-XCAD-Interface&version=1.4.1.2 
 ```
-* sync the PLC project repo from github:
+* sync the PLC project repo from github (e.g., the project you created in the steps above):
 ```
-https://github.com/craigmcchesney/XTES-SXR-vacuum-PLC-prototype 
+https://github.com/craigmcchesney/GmdPlc 
 ```
 * create a folder for the xcad import project
-* download the EPlan generated XML file that you want to import to your xcad project folder e.g., 
-```
-https://drive.google.com/file/d/133y2T59sPIvZixEH33l8fZKdpjWKky7Q/view 
-```
+* download the EPlan generated XML file that you want to import to your xcad project folder
+* clean up the xml file as necessary
+  - remove all occurrences of the tags (usually with "X" or "Y") as the value
+    ```
+    <PreviousId></PreviousId>
+    ```
+
 * run “TwinCAT XAE” application which will run VisualStudio, and open the solution (sln file) inside the Twincat project folder that you synced from git, just to make sure the project loads
-  - generate a TwinCAT license inside the Twincat XAE app (VisualStudio).  To do this, expand the “XtesSxrPlcProto” node in the left window pane, then expand the child node “SYSTEM” and double-click child node “License”.  Click button “7 Days Trial License”. Enter captcha value and click OK.  This should cause licenses for both “TC3 PLC” and “TC3 XCAD Interface” (and possibly others) to be listed in the table at the bottom of the middle window pane.
+  - generate a TwinCAT license inside the Twincat XAE app (VisualStudio).  To do this, expand the “XtesSxrPlcProto” node in the left window pane, then expand the child node “SYSTEM” and double-click child node “License”.  Click button “7 Days Trial License”. Enter captcha value and click OK.  This should cause licenses for both “TC3 PLC” and “TC3 XCAD Interface” (and possibly others) to be listed in the table at the bottom of the middle window pane.  If "TC3 XCAD Interface" is not listed, click on the "Manage Licenses" tab and click the checkbox next to "TC3 XCAD Interface" in the "Add License" column, and check that the license now appears under the tab "Order Information (Runtime)".
   - close XAE
 * run “TC3 XCAD Interface” application
+  - DANGER: make sure you've made a backup of your twincat project.  The XCAD program will probably fail, and when it does, it will probably delete your ENTIRE twincat project, which can be disconcerting.  More details about how to (hopefully) restore it below.  But an extra backup can't hurt...
   - select “New Project” from File menu
     * in the dialog that appears, for “Location”, browse to xcad project folder created above
     * for “CAD export file”, select the xml file downloaded above
@@ -88,28 +91,27 @@ https://drive.google.com/file/d/133y2T59sPIvZixEH33l8fZKdpjWKky7Q/view
     * make sure “Generate PLC project” is set to “False” and click “OK”
   - click the button with an arrow pointing to the right between the left and right window panes
     * this runs a transformation and now a tree representation of the resulting “tci” file is displayed in the right window pane
-    * you can review the process output by click the “Output” tab at the bottom of the pane, and errors by clicking “Error List”.  The output should show messages about producing xml for each node, and the error list should be empty.
-    * click the toolbar button to save the tci file
+    * you can review the process output by clickingf the “Output” tab at the bottom of the pane, and errors by clicking “Error List”.  The output should show messages about producing xml for each node, and the error list should be empty.
+    * click the toolbar button in the window's upper right corner to save the tci file
   - open “TwinCATImportFile.tci” in the xcad project folder using notepad
     * do “Find/Replace” to replace all occurrences of “XCAD_Interface_GVO.” (note the trailing period) (this could also be "XCAD_Interface_GVL.", it was GVO the first time I used the tool and GVL the 2nd) with an empty string (leave “to” field blank)
     * save the file, and click “Yes” to reload the local file instead of the one that xcad has been using
     * close notepad
   - select “ImportExport” from the tools menu
-    * click “Yes” button to save the “tci” file
-    * at this point, you can open the “tci” file in notepad and review the xml that will be imported to twincat.  You don’t need to do this but for experimental work you might want to
     * select radio button “Import data to an existing TwinCAT project” and click “Next” button
     * the path to the tci file should be displayed, check it and click “Next”
     * the path to the TwinCAT project you selected in the “new project” dialog should be displayed, check that it is or select it if not, and click “Next”
     * both paths are displayed for confirmation, review them and click “Next”
     * a dialog appears with console showing output from import process
     * the XAE/VisualStudio window opens, displaying the Twincat project
-    * once the process is complete, it displays the message “Import successfully completed. TwinCAT XAE will be closed now.  Save changes?”, regardless of whether the process was successful or not.
+    * once the process is complete, the dialog displays the message “Import successfully completed. TwinCAT XAE will be closed now.  Save changes?”, regardless of whether the process was successful or not.
     * and also regardless of whether the process succeeded or not, the “Yes” button will be disabled
     * if you click “No”, the changes made by xcad to the twincat project will be lost
-use the scrollbar in the import dialog to review the output.  there shouldn’t be errors about creating children, but there might be messages about linking failed if there are EPlan variables that can’t be mapped to twincat variables (e.g. right now there are EPlan output signals for the VGC pumps like TV2K4_VGC_1.q_xCLS_DO that don’t exist in twincat)
-    * the best thing to do is open the windows task manager using “ctrl-alt-del”, and then force kill TC3XCADInterface application.
-  - click over to the XAE/VisualStudio, 
-    * review the xcad changes e.g., that devices were added under the I/O node at the bottom of the project, and that the “PlcTask Inputs/Outputs” under “XtesSxrPlc Instance” are linked to devices by double clicking on each device and checking that its “Linked to…” field shows a non-empty value.  Currently some variables do not get linked because they don’t exist in the EPlan schematic.  This varies by device and we are working to understand these.
+    * use the scrollbar in the import dialog to review the output.  there shouldn’t be errors about creating children, but there might be messages about linking failed if there are EPlan variables that can’t be mapped to twincat variables (e.g. right now there are EPlan output signals for the VGC pumps like TV2K4_VGC_1.q_xCLS_DO that don’t exist in twincat)
+    * if (when) the process fails, you might receive a bunch of dialogs about backups failing and things not being "deleted in time".  You will probably find that your twincat project has been erased completely.  :-)  If you're lucky, you'll find it buried in your xcad project folder in a folder called "Backups", you might be able to just restore that folder to its original location.
+    * the best thing to do is open the windows task manager using “ctrl-alt-del”, and then force kill TC3XCADInterface application whether it was successful or not.  If it was unsuccessful, you might want to dismiss the import/export dialog and go view the log file (select "View Log" from "Tools" menu).  This will give you an idea where to start troubleshooting.
+  - if the import was successful, after killing the XCAD program, click over to the XAE/VisualStudio, otherwise see the troubleshooting section below
+    * review the xcad changes e.g., that devices were added under the I/O node at the bottom of the project, and that the “PlcTask Inputs/Outputs” under “XtesSxrPlc Instance” are linked to devices.  You can double-click "PlcTask Inputs" and "PlcTask Outputs" to see a table of each function block variable.  The rightmost column shows what I/O channel that variable is linked to.  They should pretty much all be linked.
     * from “File” menu, select “save all” to save the changes
 #### troubleshooting
 TC XCAD Interface is the worst tool ever created.  It crashes, fails for unspecified reasons, all lots of fun.  In the end, the crashes and failures usually claim that the user aborted the process but there is typically something about the input xml file that it's not happy about.  There is usually some red herring message about gui or events at the bottom of the import console or log viewer, but if you scroll up to where the last element of xml is mentioned "creating child x of y", there is probably something about element x that xcad doesn't like.  I've found it useful to compare that element to its predecessor(s) and see what is different about the element that is failing.  That's how I discovered the 2 problems below.
