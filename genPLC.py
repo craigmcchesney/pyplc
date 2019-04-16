@@ -1651,6 +1651,12 @@ class PlcGenerator:
                     document.writeToFile(f, deviceOrdering)
                     fm.write(progName + '();\n')
 
+        # write non-PLC variables that are used in the PLC code created by the generator
+        with open('gen.sim.GVL_VARIABLES', 'w') as f:
+            f.write("Global_Pressure : REAL;\n")
+            f.write("Global_Leak : REAL;\n")
+
+
                 
     @classmethod
     def generateVarMap(cls, plcContainer, simContainer):
