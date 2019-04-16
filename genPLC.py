@@ -393,7 +393,7 @@ class Mks317GaugeDevice(GaugeDevice):
 
 
     def simStructType(self):
-        return "SimMks317GaugeStruct"
+        return "SimMks275GaugeStruct"
 
 
 
