@@ -116,10 +116,12 @@ https://github.com/craigmcchesney/GmdPlc
 #### troubleshooting
 TC XCAD Interface is the worst tool ever created.  It crashes, fails for unspecified reasons, all lots of fun.  In the end, the crashes and failures usually claim that the user aborted the process but there is typically something about the input xml file that it's not happy about.  There is usually some red herring message about gui or events at the bottom of the import console or log viewer, but if you scroll up to where the last element of xml is mentioned "creating child x of y", there is probably something about element x that xcad doesn't like.  I've found it useful to compare that element to its predecessor(s) and see what is different about the element that is failing.  That's how I discovered the 2 problems below.
 * in the most recent case, the following came up: had to remove all sections like:
+```
        <Connection>
         <PreviousId>Y</PreviousId>
         <ConnectId>Y</ConnectId>
        </Connection>
+```
 * in a previous case, I had to remove sections like this:
 ```
 <EtherCAT><Slave><Info><PhysAddr>1004</PhysAddr><PhysAddrFixed>true</PhysAddrFixed></Info><PreviousPort Selected="true"><PhysAddr>1003</PhysAddr></PreviousPort></Slave></EtherCAT>
