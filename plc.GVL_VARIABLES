@@ -1,2 +1,0 @@
-{attribute 'pytmc' := 'pv: AT1L0:GAS:VAC:OVRDON'}
-xSystemOverrideMode : BOOL; (* Global system override for the prototype section*)
