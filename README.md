@@ -29,26 +29,30 @@ python genPLC.py --progUnitsFile ./progUnits.gmd.csv ./device-info.gmd.csv
 Running the generator to create both plc and sim artifacts for the "GMD" program unit produces the following files:
 ```
 gen.plc.GVL_GMD
+gen.plc.GVL_VARIABLES
 gen.plc.PRG_GMD
+gen.plc.PRG_MAIN
 gen.sim.GVL_GMD
 gen.sim.PRG_GMD
+gen.sim.PRG_MAIN
 gen.varMap
 ```
-### create Twincat project for PLC
+### create Twincat project for PLC and simulation
 * run VisualStudio/Twincat, and create a new project
 * from the "PLC" menu, use "Library Repository" to install the 3 SLAC-provided PLC libs, if they are not already present.  These are available in the github repo https://github.com/craigmcchesney/SLAC_vacuum_libs . Install each library file using the Library Repository tool.
-* under "PLC" node in solution explorer, add a new item of type "standard plc project"
+#### create PLC
+* under "PLC" node in solution explorer, add a new item of type "standard plc project", named "GmdPlc"
 * expand the node for the new plc project, right click on "References", and select "add library", for both the "LCLS General" and "L2SI Vacuum Library" that you installed using the library repository, in the selection dialog these appear under the node labeled "Miscellaneous"
-* for each file created by the generator with the "gen.plc." prefix, create corresponding Twincat documents with the content from the generated files.  For each file with a "GVL_" prefix, add a new "Global Variable List" under the GVLs node of the PLC project, and add the content from the generated file in the "VAR_GLOBAL" section.  For the GVL documents, be sure to remove the line at the top of the Twincat GVL file "{attribute 'qualified_only'}" so that variable references can be made from PLC programs without qualifying them using the GVL document name.  For the files with "PRG_" prefix, add a new POU element and select structured text program as the type and paste in the generated file's content as the program code.  The GVLs for the project should now include GVL_EM1K0_GMD_VGC_1, GVL_GMD, and GVL_TV1K0_GAS_VGC_1.  The POUs should include MAIN, PRG_EM1K0_GMD_VGC_1, PRG_GMD, and PRG_TV1K0_GAS_VGC_1.  Make sure to invoke each PRG_ file from the "MAIN" program as follows:
-```
-PRG_EM1K0_GMD_VGC_1();
-PRG_GMD();
-PRG_TV1K0_GAS_VGC_1();
-```
-Note that this step will probably be automated at some point so that the generator produces xml files that can be added to the new project directly, but for now the process is manual.
-* add another GVL called "GVL_VARIABLES", and add the line ``	xSystemOverrideMode : BOOL;`` in the "VAR_GLOBAL" section.
+* for each file created by the generator with the "gen.plc." prefix, create corresponding Twincat documents with the content from the generated files.  For each file with a "gen.plc.GVL_" prefix, add a new "Global Variable List" under the GVLs node of the PLC project, and add the content from the generated file in the "VAR_GLOBAL" section.  For the GVL documents, be sure to remove the line at the top of the Twincat GVL file "{attribute 'qualified_only'}" so that variable references can be made from PLC programs without qualifying them using the GVL document name.  For the files with "gen.plc.PRG_" prefix, add a new POU element and select structured text program as the type and paste in the generated file's content as the program code.  For the file "gen.plc.MAIN", edit the already existing POU document "MAIN (PRG)", and add the file's content to the body of the program.  The GVLs for the project should now include GVL_GMD and GVL_VARIABLES.  The POUs should include MAIN and PRG_GMD.  Note that this step will probably be automated at some point so that the generator produces xml files that can be added to the new project directly, but for now the process is manual.
 * right click on the PLC project node and select "build", and ensure that the PLC builds without errors
-### save the PLC input/output variables to csv file
+#### create simulation
+* under "PLC" node in solution explorer, add a new item of type "standard plc project", named "GmdSim"
+* expand the node for the new plc project, right click on "References", and select "add library".  Under "Miscellaneous", select "Vacuum System Simulator Library" that you installed above, and click "OK".
+* as was done for the files prefixed with "gen.plc" above, add GVL and PRG documens for the files prefixed with "gen.sim".  For each file with a "gen.sim.GVL_" prefix, add a new "Global Variable List" under the GVLs node of the sim project, and add the content from the generated file in the "VAR_GLOBAL" section.  For the GVL documents, be sure to remove the line at the top of the Twincat GVL file "{attribute 'qualified_only'}" so that variable references can be made from PLC programs without qualifying them using the GVL document name.  For the files with "gen.sim.PRG_" prefix, add a new POU element and select structured text program as the type and paste in the generated file's content as the program code.  For the file "gen.sim.MAIN", edit the already existing POU document "MAIN (PRG)", and add the file's content to the body of the program.  The GVLs for the simulation should now include GVL_GMD.  The POUs should include MAIN and PRG_GMD.
+* right click on the PLC project node and select "build", and ensure that the PLC builds without errors### save the PLC input/output variables to csv file
+#### Twincat project configuration
+TODO: configure system / Real-TIme settings?
+#### provide feedback for EPlan schematics
 * for feedback to the EPlan schematics, we need to dump the PLC input and output variable names to a CSV file.  This allows us to later import the EPlan xml file to 1) create the I/O devices for the PLC, and link the PLC variables to the I/O devices.
 * this step must be done after building the PLC project
 * to save the input variables, expand the "Instance" node of your PLC project and double-click "PlcTask Inputs".  This displays a list of the input variables.  Select all the items in the list, right click, and select "save item as".  Specify the location and filename for the csv file that will contain the input variables.
