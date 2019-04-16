@@ -1581,6 +1581,11 @@ class PlcGenerator:
             with open('gen.plc.PRG_' + docName.upper().replace("-", "_"), 'w') as f:
                 document.writeToFile(f, deviceOrdering)
 
+        # write non-PLC variables that are used in the PLC code created by the generator
+        with open('gen.plc.GVL_VARIABLES', 'w') as f:
+            f.write("xSystemOverrideMode : BOOL; (* Global system override for the prototype section*)\n")
+
+
                 
     @classmethod
     def generateSim(cls, container):
