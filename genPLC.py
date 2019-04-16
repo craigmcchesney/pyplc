@@ -1577,9 +1577,12 @@ class PlcGenerator:
                 document.writeToFile(f, deviceOrdering)
 
         # write program documents
-        for docName, document in container.progDocs.items():
-            with open('gen.plc.PRG_' + docName.upper().replace("-", "_"), 'w') as f:
-                document.writeToFile(f, deviceOrdering)
+        with open('gen.plc.PRG_MAIN', 'w') as fm:
+            for docName, document in container.progDocs.items():
+                progName = 'PRG_' + docName.upper().replace("-", "_")
+                with open('gen.plc.' + progName, 'w') as f:
+                    document.writeToFile(f, deviceOrdering)
+                    fm.write(progName + '();\n')
 
         # write non-PLC variables that are used in the PLC code created by the generator
         with open('gen.plc.GVL_VARIABLES', 'w') as f:
@@ -1641,9 +1644,12 @@ class PlcGenerator:
                 document.writeToFile(f, deviceOrdering)
 
         # write program documents
-        for docName, document in container.progDocs.items():
-            with open('gen.sim.PRG_' + docName.upper().replace("-", "_"), 'w') as f:
-                document.writeToFile(f, deviceOrdering)
+        with open('gen.sim.PRG_MAIN', 'w') as fm:
+            for docName, document in container.progDocs.items():
+                progName = 'PRG_' + docName.upper().replace("-", "_")
+                with open('gen.sim.' + progName, 'w') as f:
+                    document.writeToFile(f, deviceOrdering)
+                    fm.write(progName + '();\n')
 
                 
     @classmethod
