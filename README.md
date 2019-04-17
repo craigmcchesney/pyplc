@@ -170,3 +170,6 @@ The <PhysAddr>1003</PhysAddr> stuff was a variable in EPLAN that was filled out 
 ```
 python mapSimIO.py GmdPlc.tsproj "TIPC^GmdPlc^GmdPlc Instance" "TIPC^GmdSim^GmdSim Instance" "SimTask" "TIID^SimDevice 2 (EtherCAT Simulation)^" gen.varMap
 ```
+* make a backup of the original Twincat tsproj file in the directory where you copied it from originally since you are about to overwrite it with the one you just created.  The mapper program also creates a backup in the working directory with a ".bak.(timestamp)" extension
+* copy the tsproj file written by the mapper (that now contains sim variable links) back to the Twincat project directory where you copied it from originally
+* open your PLC project in Twincat and confirm that there are now links for the variables under "SimTask Inputs" and "SimTask Outputs".  Everything should be linked.
