@@ -1676,6 +1676,7 @@ class PlcGenerator:
 
         # write program documents
         with open('gen.sim.PRG_MAIN', 'w') as fm:
+            fm.write("PRG_DIAGNOSTIC();\n")
             for docName, document in container.progDocs.items():
                 progName = 'PRG_' + docName.upper().replace("-", "_")
                 with open('gen.sim.' + progName, 'w') as f:
@@ -1684,8 +1685,21 @@ class PlcGenerator:
 
         # write non-PLC variables that are used in the PLC code created by the generator
         with open('gen.sim.GVL_VARIABLES', 'w') as f:
-            f.write("Global_Pressure : REAL;\n")
-            f.write("Global_Leak : REAL;\n")
+            f.write("{attribute 'global_init_slot' := '40500'} // make sure variables are initialized before other GVLs\n")
+            f.write("Global_Leak : REAL := 0;\n")
+            f.write("Global_Pressure : REAL := 0.0079;\n")
+            f.write("New_Pressure : REAL := 22.0; //Torr\n")
+            f.write("Global_OverridePressure : BOOL := FALSE;\n")
+
+        # write files for diagnostic code
+        with open('gen.sim.PRG_DIAGNOSTIC.var', 'w') as f:
+            f.write("   heartbeat AT %Q* : UINT := 0;\n")
+
+        with open('gen.sim.PRG_DIAGNOSTIC', 'w') as f:
+            f.write("heartbeat := heartbeat + 1;\n" +
+                    "IF heartbeat > 65000\n" +
+	            "   THEN heartbeat := 0;\n" +
+                    "END_IF\n")
 
 
                 
