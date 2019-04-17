@@ -1578,6 +1578,7 @@ class PlcGenerator:
 
         # write program documents
         with open('gen.plc.PRG_MAIN', 'w') as fm:
+            fm.write("PRG_DIAGNOSTIC();\n")
             for docName, document in container.progDocs.items():
                 progName = 'PRG_' + docName.upper().replace("-", "_")
                 with open('gen.plc.' + progName, 'w') as f:
@@ -1587,6 +1588,36 @@ class PlcGenerator:
         # write non-PLC variables that are used in the PLC code created by the generator
         with open('gen.plc.GVL_VARIABLES', 'w') as f:
             f.write("xSystemOverrideMode : BOOL; (* Global system override for the prototype section*)\n")
+
+        # write files for diagnostic code
+        with open('gen.plc.PRG_DIAGNOSTIC.var', 'w') as f:
+            f.write("   fbTime : FB_LocalSystemTime := ( bEnable := TRUE, dwCycle := 1 );\n" +
+	            "   logTimer : TON := ( IN := TRUE, PT := T#1000ms );\n\n" +
+	            "   plcName : STRING[15];\n\n" +	
+	            "   {attribute 'pytmc' := ' pv: simHeartbeat '}\n" +
+	            "   simHeartbeat AT %I* : UINT := 0;\n" +
+	            "   {attribute 'pytmc' := ' pv: plcHeartbeat '}\n" +
+	            "   plcHeartbeat : UDINT := 0;\n" +
+	            "   {attribute 'pytmc' := ' pv: plcInfo '}\n" +
+	            "   plcInfo : STRING[40];\n" +
+	            "   {attribute 'pytmc' := ' pv: plcLocalTime '}\n" +
+	            "   plcLocalTime : STRING[25];\n")
+
+        with open('gen.plc.PRG_DIAGNOSTIC', 'w') as f:
+            f.write("plcHeartbeat := plcHeartbeat + 1;\n" +
+                    "IF plcHeartbeat > 4294967000\n" +
+	            "   THEN plcHeartbeat := 0;\n" +
+                    "END_IF\n\n" +
+                    "// get timestamp as string every second\n" +
+                    "fbTime();\n" +
+                    "logTimer( IN := fbTime.bValid );\n" +
+                    "IF logTimer.Q THEN\n" +
+                    "   logTimer( IN := FALSE ); logTimer( IN := fbTime.bValid );\n" +
+                    "   plcLocalTime := SYSTEMTIME_TO_STRING(fbTime.systemTime);\n" +
+                    "END_IF\n\n" +
+                    "// make an info string\n" +
+                    "plcName := 'Prototype PLC: ';\n" +
+                    "plcInfo := CONCAT(plcName, plcLocalTime);\n")
 
 
                 
