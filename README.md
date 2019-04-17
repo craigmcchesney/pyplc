@@ -168,3 +168,5 @@ The <PhysAddr>1003</PhysAddr> stuff was a variable in EPLAN that was filled out 
 * copy the "gen.varMap" from the working directory for your generator run above to the working directory.  This is a serialized python dictionary that maps PLC variables to sim variables.  This is used to replicate the links from PLC variables to PLC I/O devices and create links between sim variables and sim I/O devices.  Otherwise this is a very tedious manual process.
 * from the working directory, run the python mapper tool:
 ```
+python mapSimIO.py GmdPlc.tsproj "TIPC^GmdPlc^GmdPlc Instance" "TIPC^GmdSim^GmdSim Instance" "SimTask" "TIID^SimDevice 2 (EtherCAT Simulation)^" gen.varMap
+```
