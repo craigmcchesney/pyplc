@@ -5,6 +5,8 @@ import re
 import argparse
 import xml.etree.ElementTree as ET
 import pickle
+import datetime
+import shutil
 
 class Options:
 
@@ -55,19 +57,21 @@ def main():
                         help="twincat device prefix for sim e.g. 'TIID^Device 2 (EtherCAT Simulation)^'")
     parser.add_argument("variableMapFile",
                         help="csv file from generator with plc variable, data type, and sim variable")
-#    parser.add_argument("--plc", help="generate plc artifacts only", action="store_true")
-#    parser.add_argument("--deviceFile", help="file containing devices to generate")
     args = parser.parse_args()
 
     options = Options()
 
-    # make sure devInfo input file is specified
+    # make sure tsproj project file file is specified
     if not args.projFile:
         sys.exit("no input project file specified")
     else:
         print()
         print("using project file: %s" % args.projFile)
         options.projFile = args.projFile
+
+        # back up file before proceeding
+        backupFile = options.projFile + '.bak.' + str(datetime.datetime.timestamp(datetime.datetime.now()))
+        shutil.copy(options.projFile, backupFile)
 
     # make sure plcName is specified
     if not args.plcName:
@@ -119,20 +123,39 @@ def main():
         sys.exit("error opening variable map file: %s" % ex)
 
     signalMap = {
-        "FB_VGC" : {
+        "FB_VGC" : { # ST_VacuumValve
             "q_xOPN_DO" : "i_xSol",
             "i_xOpnLS" : "q_xOpnLS",
             "i_xClsLS" : "q_xClsLS"},
-        "FB_MKS500" : {
+        "FB_VRC" : { # ST_VacuumValve
+            "q_xOPN_DO" : "i_xSol",
+            "i_xOpnLS" : "q_xOpnLS",
+            "i_xClsLS" : "q_xClsLS"},
+        "FB_MKS500" : { # ST_MKS_500
             "i_iPRESS_R" : "q_iRawPress",
             "i_xHV_ON" : "q_xHVOn",
             "i_xDisc_Active" : "q_DisActive",
             "q_xHV_DIS" : "i_xHvOn"},
-        "FB_MKS275" : {
+        "FB_MKS422" : { # ST_MKS_422
+            "i_iPRESS_R" : "q_iRawPress",
+            "q_xHV_DIS" : "i_xHvOn"},
+        "FB_MKS275" : { # ST_MKS_275
             "i_iPRESS_R" : "q_iRawPress"},
-        "FB_PIP_Gamma" : {
+        "FB_MKS317" : { # we are mapping this to ST_MKS_275 since there is not a sim function block for 317
+            "i_iPRESS_R" : "q_iRawPress"},
+        "FB_PIP_Gamma" : { # ST_GAM_PIP
             "q_xHVEna_DO" : "xOn",
-            "i_xSP_DI" : "?unmapped"}}
+            "i_xSP_DI" : "?unmapped"},
+        "FB_EbaraEVA" : { # ST_MechPump
+            "q_xRunDo" : "i_xRun",
+            "q_xRemote" : "?unmapped",
+            "i_xAlarmOK" : "?unmapped",
+            "i_xIsRun" : "?unmapped"},
+        "FB_PTM_TwisTorr" : { # ST_MechPump
+            "q_RunDO" : "i_xRun",
+            "i_xAtSpd" : "q_xAtSpd",
+            "i_xFault" : "q_xErr"},
+    }
 
     # parse xml project file
     try:
@@ -165,7 +188,6 @@ def main():
     for deviceMap in plcMap.findall("OwnerB"):
         
         deviceName = deviceMap.attrib['Name']
-        print()
         
         ind = deviceName.rfind('^')
         if ind == -1:

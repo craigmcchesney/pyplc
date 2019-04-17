@@ -1715,7 +1715,7 @@ class PlcGenerator:
             variableData = {}
             variableData['type'] = plcFB.oType()
             variableData['simVar'] = simStruct.objectName()
-            simVarMap[devName] = variableData
+            simVarMap[plcFB.objectName()] = variableData
         
         with open('gen.varMap', 'wb') as f:
             pickle.dump(simVarMap, f, pickle.HIGHEST_PROTOCOL)
