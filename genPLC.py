@@ -1361,7 +1361,14 @@ class PlcDocument:
 
 
 class VariableDocument(PlcDocument):
-    pass
+
+
+    
+    def writeToFile(self, fobj, devOrdering):
+
+        fobj.write("VAR_GLOBAL\n\n")
+        super().writeToFile(fobj, devOrdering)                
+        fobj.write("\nEND_VAR\n")
                 
 
 
