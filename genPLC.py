@@ -1686,10 +1686,12 @@ class PlcGenerator:
         # write non-PLC variables that are used in the PLC code created by the generator
         with open('gen.sim.GVL_VARIABLES', 'w') as f:
             f.write("{attribute 'global_init_slot' := '40500'} // make sure variables are initialized before other GVLs\n")
+            f.write("VAR_GLOBAL\n\n")
             f.write("Global_Leak : REAL := 0;\n")
             f.write("Global_Pressure : REAL := 0.0079;\n")
             f.write("New_Pressure : REAL := 22.0; //Torr\n")
-            f.write("Global_OverridePressure : BOOL := FALSE;\n")
+            f.write("Global_OverridePressure : BOOL := FALSE;\n\n")
+            f.write("END_VAR\n")
 
         # write files for diagnostic code
         with open('gen.sim.PRG_DIAGNOSTIC.var', 'w') as f:
