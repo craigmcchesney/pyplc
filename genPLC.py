@@ -529,6 +529,37 @@ class EbaraEvaPumpDevice(PumpDevice):
 
     
 @register
+class PtmEbara010mPumpDevice(PumpDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "PTM_EBARA_010M";
+
+
+
+    def plcFunctionBlockType(self):
+        return "PtmEbara010mPumpFB"
+
+
+    
+    def simFunctionBlockType(self):
+        return "SimTurboPumpFB"
+
+
+
+    def simStructType(self):
+        return "SimTurboMechPumpStruct"
+
+
+    
+@register
 class PtmTwisTorrPumpDevice(PumpDevice):
 
 
@@ -932,6 +963,28 @@ class EbaraEvaPumpFB(PlcFunctionBlock):
 
     def oType(self):
         return "FB_EbaraEVA";
+
+
+
+class PtmEbara010mPumpFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def code(self):
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "i_xExtILKOk := TRUE" +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+    
+
+    def oType(self):
+        return "FB_PTM_Ebara_010M";
 
 
 
