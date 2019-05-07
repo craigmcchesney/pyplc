@@ -51,6 +51,13 @@ class PlcDevice(ABC):
     
 
 
+    # check if device is supported by generator
+    @classmethod
+    def isSupported(cls, tag):
+        return tag in cls.deviceTypes
+
+
+    
     # create instance of class with specified tag
     @classmethod
     def createDevice(cls, tag, deviceInfo):
@@ -1764,7 +1771,8 @@ class DeviceHandler:
 
     progUnits = []
     devices = []
-    deviceTypes = set()
+    supportedDevices = set()
+    unsupportedDevices = set()
 
 
     
@@ -1787,17 +1795,20 @@ class DeviceHandler:
             ((len(cls.devices)) and (iName in cls.devices)) or
             ((len(cls.progUnits)) and (iProgUnit in cls.progUnits))):
 
-            if ((not iName) or (len(iName) == 0)):
-                sys.exit("no iName provided for row %d: %s" % (rowCount, info))
-
             # we are ignoring rows that don't have a tag, this allows the device info table to
             # contain devices that are out of scope of the plc, but generate a warning just in case:
             if ((not iTag) or (len(iTag) == 0)):
                 print("skipping row with missing plc tag, row %d: %s" % (rowCount, info))
                 return
 
+            if ((not iName) or (len(iName) == 0)):
+                sys.exit("no iName provided for row %d: %s" % (rowCount, info))
+
             if options.listTagsOnly:
-                cls.deviceTypes.add(iTag)
+                if PlcDevice.isSupported(iTag):
+                    cls.supportedDevices.add(iTag)
+                else:
+                    cls.unsupportedDevices.add(iTag)
 
             else:
 
@@ -1829,8 +1840,16 @@ class DeviceHandler:
         if options.listTagsOnly:
             
             # print all unique devices
-            for dtype in sorted(cls.deviceTypes):
-                print(dtype)
+            if len(cls.supportedDevices):
+                print()
+                print("supported devices:")
+                for dtype in sorted(cls.supportedDevices):
+                    print(dtype)
+            if len(cls.unsupportedDevices):
+                print()
+                print("unsupported devices:")
+                for dtype in sorted(cls.unsupportedDevices):
+                    print(dtype)
 
         else:
             print("==================================================")
