@@ -244,6 +244,37 @@ class VrcValveDevice(ValveDevice):
 
 
 
+@register
+class VccValveDevice(ValveDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "VCC";
+
+
+
+    def plcFunctionBlockType(self):
+        return "VccValveFB"
+
+
+
+    def simFunctionBlockType(self):
+        return "SimVacuumValveFB"
+
+
+
+    def simStructType(self):
+        return "SimVacuumValveStruct"
+
+
+
 class ColdCathodeGaugeDevice(GaugeDevice):
     pass
 
@@ -688,6 +719,29 @@ class VrcValveFB(PlcFunctionBlock):
 
     def oType(self):
         return "FB_VRC";
+
+
+
+class VccValveFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def code(self):
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "i_xExtILK_OK := TRUE, i_xOverrideMode := xSystemOverrideMode" +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+
+    
+
+    def oType(self):
+        return "FB_VCC";
 
 
 
