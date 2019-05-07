@@ -455,7 +455,7 @@ class EbaraDryPumpDevice(PumpDevice):
 
 
     def simStructType(self):
-        return "SimMechPumpStruct"
+        return "SimRoughMechPumpStruct"
 
 
     
@@ -486,7 +486,7 @@ class EbaraEvaPumpDevice(PumpDevice):
 
 
     def simStructType(self):
-        return "SimMechPumpStruct"
+        return "SimRoughMechPumpStruct"
 
 
     
@@ -517,7 +517,7 @@ class PtmTwisTorrPumpDevice(PumpDevice):
 
 
     def simStructType(self):
-        return "SimMechPumpStruct"
+        return "SimTurboMechPumpStruct"
 
 
     
@@ -1266,7 +1266,7 @@ class SimMks275GaugeStruct(SimGaugeStruct):
 
 
 
-class SimMechPumpStruct(PlcStruct):
+class SimRoughMechPumpStruct(PlcStruct):
     
 
     
@@ -1276,7 +1276,34 @@ class SimMechPumpStruct(PlcStruct):
 
 
     def declaration(self):
-        return self.simpleDeclaration()
+
+        return (self.objectName() + " : " +
+                self.oType() + " := " +
+                PlcGenerator.openParen +
+                "rMRE:=10, rBasePress:=1E-3" +
+                PlcGenerator.closeParen + PlcGenerator.terminator)
+
+    def oType(self):
+        return "ST_MechPump";
+
+
+
+class SimTurboMechPumpStruct(PlcStruct):
+    
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    def declaration(self):
+
+        return (self.objectName() + " : " +
+                self.oType() + " := " +
+                PlcGenerator.openParen +
+                "iMaxSpd:=1000, rBasePress:=1E-9, rMaxLoad:=0.95" +
+                PlcGenerator.closeParen + PlcGenerator.terminator)
 
     
 
