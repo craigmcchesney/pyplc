@@ -13,6 +13,11 @@ Contains two python programs, genPLC.py and mapSimIO.py.  The first takes a tabu
 ```
 GMD
 ```
+### run genPLC.py to list supported and unsupported devices
+Running the generator as follows will list supported and unsupported devices within the specified program unit(s):
+```
+python genPLC.py --progUnitsFile ./progUnits.gatt.csv ./device-info.gatt.csv --tags
+```
 ### run genPLC.py
 To run the generator using the device info and volumes csv files created above, to create just plc artifacts:
 ```
