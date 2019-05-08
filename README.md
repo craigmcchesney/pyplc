@@ -18,6 +18,7 @@ Running the generator as follows will list supported and unsupported devices wit
 ```
 python genPLC.py --progUnitsFile ./progUnits.gatt.csv ./device-info.gatt.csv --tags
 ```
+This will display a list of supported and unsupported devices.  If there are unsupported devices, the next task is to modify the pyplc generator to support them.  This entails deriving a class from "PlcDevice", and implementing the appropriate methods, mostly class names for the associated PLC objects.  The best thing to do is find a similar pump, gauge, or valve, and copy that section as a starting point.  You'll need to implement methods that reference the PLC objects to create in the PLC and simulation code, a function block type for the PLC and both a struct and function block for the simulation.  So if your new device doesn't use existing PLC and simulation objects, you'll have to add those classes too, again using existing classes as a starting point.  It's all pretty straightforward.
 ### run genPLC.py
 To run the generator using the device info and volumes csv files created above, to create just plc artifacts:
 ```
