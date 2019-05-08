@@ -13,7 +13,7 @@ Contains two python programs, genPLC.py and mapSimIO.py.  The first takes a tabu
 ```
 GMD
 ```
-### run genPLC.py to list supported and unsupported devices
+### identify and add support for unsupported devices
 Running the generator as follows will list supported and unsupported devices within the specified program unit(s):
 ```
 python genPLC.py --progUnitsFile ./progUnits.gatt.csv ./device-info.gatt.csv --tags
@@ -48,7 +48,7 @@ gen.varMap
 ```
 ### create Twincat project for PLC and simulation
 * run VisualStudio/Twincat, and create a new project
-* from the "PLC" menu, use "Library Repository" to install the 3 SLAC-provided PLC libs, if they are not already present.  These are available in the github repo https://github.com/craigmcchesney/SLAC_vacuum_libs . Install each library file using the Library Repository tool.
+* from the "PLC" menu, use "Library Repository" to install the 3 SLAC-provided PLC libs, if they are not already present.  These are available in the github repo https://github.com/craigmcchesney/SLAC_vacuum_libs . Install each library file using the Library Repository tool ("PLC" menu, select "Library Repository...").
 #### create PLC
 * under "PLC" node in solution explorer, add a new item of type "standard plc project", named "GmdPlc"
 * expand the node for the new plc project, right click on "References", and select "add library", for both the "LCLS General" and "L2SI Vacuum Library" that you installed using the library repository, in the selection dialog these appear under the node labeled "Miscellaneous".  Also, search for the twincat library "Tc2_Utilities" and add that too.
