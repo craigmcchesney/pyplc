@@ -1735,10 +1735,13 @@ class PlcGenerator:
 
         # write non-PLC variables that are used in the PLC code created by the generator
         with open('gen.plc.GVL_VARIABLES', 'w') as f:
-            f.write("xSystemOverrideMode : BOOL; (* Global system override for the prototype section*)\n")
+            f.write("VAR_GLOBAL\n\n")
+            f.write("xSystemOverrideMode : BOOL; (* Global system override for the prototype section*)\n\n")
+            f.write("END_VAR\n")
 
         # write files for diagnostic code
         with open('gen.plc.PRG_DIAGNOSTIC.var', 'w') as f:
+            f.write("VAR\n\n")
             f.write("   fbTime : FB_LocalSystemTime := ( bEnable := TRUE, dwCycle := 1 );\n" +
 	            "   logTimer : TON := ( IN := TRUE, PT := T#1000ms );\n\n" +
 	            "   plcName : STRING[15];\n\n" +	
@@ -1749,7 +1752,8 @@ class PlcGenerator:
 	            "   {attribute 'pytmc' := ' pv: plcInfo '}\n" +
 	            "   plcInfo : STRING[40];\n" +
 	            "   {attribute 'pytmc' := ' pv: plcLocalTime '}\n" +
-	            "   plcLocalTime : STRING[25];\n")
+	            "   plcLocalTime : STRING[25];\n\n")
+            f.write("END_VAR\n")
 
         with open('gen.plc.PRG_DIAGNOSTIC', 'w') as f:
             f.write("plcHeartbeat := plcHeartbeat + 1;\n" +
