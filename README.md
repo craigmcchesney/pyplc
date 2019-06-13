@@ -61,6 +61,12 @@ gen.varMap
   - For the remaining files with "gen.plc.PRG_" prefix (corresponding to the program units in the scope of the generator), add a new POU element  using the same program unit naming convention and select structured text program as the type and paste in the generated file's content as the program code.  
   - The POUs for this example should include MAIN, PRG_DIAGNOSTIC, and PRG_GMD.  Note that this step will probably be automated at some point so that the generator produces xml files that can be added to the new project directly, but for now the process is manual.
 * right click on the PLC project node and select "build", and ensure that the PLC builds without errors
+#### provide feedback for EPlan schematics
+* for feedback to the EPlan schematics, we need to dump the PLC input and output variable names to a CSV file.  This allows us to later import the EPlan xml file to 1) create the I/O devices for the PLC, and link the PLC variables to the I/O devices.
+* this step must be done after building the PLC project
+* to save the input variables, expand the "Instance" node of your PLC project and double-click "PlcTask Inputs".  This displays a list of the input variables.  Select all the items in the list, right click, and select "save item as".  Specify the location and filename for the csv file that will contain the input variables.
+* repeat the step above for the output variables, by double clicking on "PlcTask Outputs"
+* provide these files AND THE NAME OF THE Twincat PLC, e.g., "GmdPlc" to the team member responsible for EPlan schematics, and ask them to provide you an EPlan xml export file.
 #### create simulation
 * under "PLC" node in solution explorer, add a new item of type "standard plc project", named "GmdSim"
 * expand the node for the new plc project, right click on "References", and select "add library".  Under "Miscellaneous", select "Vacuum System Simulator Library" that you installed above, and click "OK".  Also, search for the twincat library "Tc2_Utilities" and add that too.
@@ -74,12 +80,6 @@ gen.varMap
   - For the remaining files with "gen.sim.PRG_" prefix (corresponding to the program units in the scope of the generator), add a new POU element using the same program unit naming convention and select structured text program as the type and paste in the generated file's content as the program code.  
   - The POUs for this example should include MAIN, PRG_DIAGNOSTIC, and PRG_GMD.
 * right click on the PLC project node and select "build", and ensure that the PLC builds without errors### save the PLC input/output variables to csv file
-#### provide feedback for EPlan schematics
-* for feedback to the EPlan schematics, we need to dump the PLC input and output variable names to a CSV file.  This allows us to later import the EPlan xml file to 1) create the I/O devices for the PLC, and link the PLC variables to the I/O devices.
-* this step must be done after building the PLC project
-* to save the input variables, expand the "Instance" node of your PLC project and double-click "PlcTask Inputs".  This displays a list of the input variables.  Select all the items in the list, right click, and select "save item as".  Specify the location and filename for the csv file that will contain the input variables.
-* repeat the step above for the output variables, by double clicking on "PlcTask Outputs"
-* provide these files AND THE NAME OF THE Twincat PLC, e.g., "GmdPlc" to the team member responsible for EPlan schematics, and ask them to provide you an EPlan xml export file.
 ### import xml file from EPlan using TC3 XCAD Interface
 * install both Beckhoff “TwinCAT XAE” and “TC3 XCAD Interface” executables
 ```
