@@ -80,6 +80,12 @@ gen.varMap
   - For the remaining files with "gen.sim.PRG_" prefix (corresponding to the program units in the scope of the generator), add a new POU element using the same program unit naming convention and select structured text program as the type and paste in the generated file's content as the program code.  
   - The POUs for this example should include MAIN, PRG_DIAGNOSTIC, and PRG_GMD.
 * right click on the PLC project node and select "build", and ensure that the PLC builds without errors### save the PLC input/output variables to csv file
+#### create a Twincat task to run the simulation
+* under "GmdSim Project", right click "PlcTask (PlcTask)" and select delete to delete the default task
+* under "System", right click "Tasks" and select "Add new item".  Name the new task "SimTask", and select Type "TwinCAT Task".  You'll see a new node "SimTask" under "Tasks"
+* open SimTask and change its priority to 21, PLC tasks should be configured to run in the 20's, note that the main PlcTask created by default is set to 20.
+* right click "GmdSim Project" and add a new "referenced task".  Select the "SimTask" that you just added and click "Open".  You'll now see a new node "SimTask (SimTask)" under "GmdSim Project".
+* drag the GmdSim Project's "MAIN" POU to "SimTask (SimTask)", and now a node "MAIN" appears beneath it.  This means the MAIN program for the sim is now configured to run under SimTask.
 ### import xml file from EPlan using TC3 XCAD Interface
 * install both Beckhoff “TwinCAT XAE” and “TC3 XCAD Interface” executables
 ```
@@ -155,12 +161,6 @@ In the end, Pedro changed something in the schematics and the problem went away,
 ```
 The <PhysAddr>1003</PhysAddr> stuff was a variable in EPLAN that was filled out on some of the device when i placed them and thought i was necessary. These numbers seemed to impact the ordering and the tree structure of the PLC boxes when the xml to tci translation happened, so I number the box in order 1001 through 1006. I've deleted (left blank) these fields in EPLAN and now it seems to work.
 ```
-### create a Twincat task to run the simulation
-* under "GmdSim Project", right click "PlcTask (PlcTask)" and select delete to delete the default task
-* under "System", right click "Tasks" and select "Add new item".  Name the new task "SimTask", and select Type "TwinCAT Task".  You'll see a new node "SimTask" under "Tasks"
-* open SimTask and change its priority to 21, PLC tasks should be configured to run in the 20's, note that the main PlcTask created by default is set to 20.
-* right click "GmdSim Project" and add a new "referenced task".  Select the "SimTask" that you just added and click "Open".  You'll now see a new node "SimTask (SimTask)" under "GmdSim Project".
-* drag the GmdSim Project's "MAIN" POU to "SimTask (SimTask)", and now a node "MAIN" appears beneath it.  This means the MAIN program for the sim is now configured to run under SimTask.
 ### create EtherCAT simulation I/O devices from PLC I/O devices
 * export the I/O devices for the PLC project
   - find the root device created in the XCAD import described above and select it.  From the "EtherCAT" tab in the content window, click "Export Configuration File". Select destination folder, name the file, and click "Save".
