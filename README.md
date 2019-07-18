@@ -72,7 +72,7 @@ gen.varMap
 * expand the node for the new plc project, right click on "References", and select "add library".  Under "Miscellaneous", select "Vacuum System Simulator Library" that you installed above, and click "OK".  Also, search for the twincat library "Tc2_Utilities" and add that too.
 * as was done for the files prefixed with "gen.plc" above, add GVL and PRG documents for the files prefixed with "gen.sim".  
   - note that the names of the files generated will vary depending on the program units specified to include in the scope of the generator
-  - For the file gen.sim.GVL_VARIABLES, add a new "Global Variable List" under the GVLs node of the sim project, and 
+  - For the file gen.sim.GVL_VARIABLES, add a new "Global Variable List" under the GVLs node of the sim project called "GVL_Variables", and paste the contents over the default content, replacing the attribute, VAR GLOBAL and ENDVAR lines completely.
   - For each remaining file with a "gen.sim.GVL_" prefix (corresponding to the program units in the scope of the generator), add a new "Global Variable List" under the GVLs node of the sim project using the same program unit naming convention, and replace the default "{attribute 'qualified_only'}/VAR_GLOBAL/END_VAR" block with the content from the generated file.  For the GVL documents, be sure to remove the line at the top of the Twincat GVL file "" so that variable references can be made from PLC programs without qualifying them using the GVL document name.  
   - For this example, the GVLs for the simulation should include GVL_GMD and GVL_VARIABLES.  
   - For the file "gen.sim.MAIN", edit the already existing POU document "MAIN (PRG)", and add the file's content to the body of the program.  
