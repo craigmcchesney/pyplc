@@ -628,6 +628,7 @@ class PlcObject(ABC):
     
     def __init__(self, deviceInfo):
         self.container = None
+        self.pragmaName = deviceInfo.name.replace("-", ":")
 
 
         
@@ -649,7 +650,7 @@ class PlcObject(ABC):
 
 
     def pragma(self):
-        return "{attribute 'pytmc' := ' pv: " + self.objectName() + " '}"
+        return "{attribute 'pytmc' := ' pv: " + self.pragmaName + " '}"
 
     
 
@@ -659,6 +660,7 @@ class PlcFunctionBlock(PlcObject):
     prefixFb = "fb_"
 
     def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
         self.fbName = self.prefixFb + deviceInfo.name.replace("-", "_")
 
 
@@ -1298,6 +1300,7 @@ class PlcStruct(PlcObject):
     prefixSt = "st_"
 
     def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
         self.structName = self.prefixSt + deviceInfo.name.replace("-", "_")
 
 
