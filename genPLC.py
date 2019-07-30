@@ -621,6 +621,37 @@ class PtmTwisTorrPumpDevice(PumpDevice):
 
 
     
+@register
+class PtmAgilentPumpDevice(PumpDevice):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+
+
+
+    @staticmethod
+    def tag():
+        return "PTM_AGILENT";
+
+
+
+    def plcFunctionBlockType(self):
+        return "PtmAgilentPumpFB"
+
+
+    
+    def simFunctionBlockType(self):
+        return "SimTurboPumpFB"
+
+
+
+    def simStructType(self):
+        return "SimTurboMechPumpStruct"
+
+
+    
 # abstract base class for plc code objects
 class PlcObject(ABC):
 
@@ -1062,6 +1093,35 @@ class PtmTwisTorrPumpFB(PlcFunctionBlock):
 
     def oType(self):
         return "FB_PTM_TwisTorr";
+
+
+
+class PtmAgilentPumpFB(PlcFunctionBlock):
+
+
+    
+    def __init__(self, deviceInfo):
+        super().__init__(deviceInfo)
+        self.bpGauge = deviceInfo.depGauge1 # adjacent pirani gauge
+        
+
+
+    def code(self):
+        bpGauge = self.container.getFB(self.bpGauge)
+        if ((not bpGauge)):
+            sys.exit("device %s: unable to find pirani gauge: %s" %
+                     (self.objectName(), self.bpGauge))
+        return (self.fbName +
+                PlcGenerator.openParen +
+                "i_stGauge := " +
+                bpGauge.fbName + ".PG" +
+                ", i_rMaxBackingPressure := 0.1, i_xExtILKOk := TRUE" +
+                PlcGenerator.closeParen +
+                PlcGenerator.terminator)
+    
+
+    def oType(self):
+        return "FB_PTM_Agilent";
 
 
 
