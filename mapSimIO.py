@@ -136,6 +136,11 @@ def main():
             "i_xHV_ON" : "q_xHVOn",
             "i_xDisc_Active" : "q_DisActive",
             "q_xHV_DIS" : "i_xHvOn"},
+        "FB_MKS500_EP" : { # ST_MKS_500
+            "i_iPRESS_R" : "q_iRawPress",
+            "i_xHV_ON" : "q_xHVOn",
+            "i_xDisc_Active" : "q_DisActive",
+            "q_xHV_DIS" : "i_xHvOn"},
         "FB_MKS422" : { # ST_MKS_422
             "i_iPRESS_R" : "q_iRawPress",
             "q_xHV_DIS" : "i_xHvOn"},
@@ -143,8 +148,9 @@ def main():
             "i_iPRESS_R" : "q_iRawPress"},
         "FB_MKS317" : { # we are mapping this to ST_MKS_275 since there is not a sim function block for 317
             "i_iPRESS_R" : "q_iRawPress"},
-        "FB_PIP_Gamma" : { # ST_GAM_PIP
+        "FB_PIP_GAMMA" : { # ST_GAM_PIP
             "q_xHVEna_DO" : "xOn",
+            "i_iPRESS" : "?unmapped",
             "i_xSP_DI" : "?unmapped"},
         "FB_EbaraEVA" : { # ST_MechPump
             "q_xRunDo" : "i_xRun",
