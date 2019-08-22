@@ -171,6 +171,46 @@ The <PhysAddr>1003</PhysAddr> stuff was a variable in EPLAN that was filled out 
     * select the xml file that you exported from the main I/O device above
     * expand the tree below "SimDevice2 (EtherCAT Simulation)" and you should see a device tree that looks more or less like the main I/O device for the PLC
 ### map the simulation variables to the simulation i/o devices
+You might first need to add support for new devices to mapSimIO.py.  Otherwise, mapSimIO.py is run to link the simulation i/o and variables.  Both steps are described below.
+#### add support for new devices to mapSimIO.py
+Any devices for the section need to be added to the mapSimIO.py script.  This mapping started out as an external configuration file that was read in to a python dictionary, but for simplicity it was changed to a hardwired python dictionary.  The dictionary is called "signalMap".  The keys are the names of SLAC PLC function block types e.g., "FB_VGC".  The value for each entry is another dictionary, whose keys are variable names for the I/O variables of the function block type, and values are the fields of the corresponding simulation struct that the specified variable name should be mapped to.  So to continue the FB_VGC example, its variable "q_xOPN_DO" is mapped to the field "i_xSol" of the ST_VacuumValve DUT object from the SLAC simulation library.  The full dictionary entry for the FB_VGC looks like this:
+```
+    signalMap = {
+        "FB_VGC" : { # ST_VacuumValve
+            "q_xOPN_DO" : "i_xSol",
+            "i_xOpnLS" : "q_xOpnLS",
+            "i_xClsLS" : "q_xClsLS"},
+```
+You should insure that there are mappings for all input/output variables of the SLAC PLC function block class.  You can see these in the VAR/END_VAR block at the top of the POU object file.  Here are the declarations from the FB_VGC POU:
+```
+	(*IO*)
+	i_xOpnLS	AT%I*: BOOL;
+	i_xClsLS	AT%I*: BOOL;
+	q_xOPN_DO	AT%Q*: BOOL;
+```
+You can see the corresponding input/output fields of the simulation struct object in Twincat by opening the SLAC DUT object file for the struct.  Here are the declarations from ST_VacuumValve DUT:
+```
+TYPE ST_VacuumValve :
+STRUCT
+
+	//Discrete controls
+	i_xSol	 AT%I*	:BOOL;//Solenoid to control the valve( either closed or open)
+	
+	//Discrete readbacks
+	q_xOpnLS  AT%Q*: BOOL;//readback whether open
+	q_xClsLS  AT%Q*: BOOL;//readback whether closed
+END_STRUCT
+```
+Unfortunately someone from the SLAC technical team needs to provide guidance about what simulation function block and struct class should be used for a given function block class from the PLC library.  And likewise for the mapping of the variables and fields, where it's not obvious or can't be determined by looking at a similar example.
+
+If there are fewer fields in the simulation struct definition than variables in the PLC function block definition, the value in the mapping dictionary for that variable should be "?unmapped".  Here is an example of a function block with unmapped variables (FB_PIP_GAMMA):
+```
+        "FB_PIP_GAMMA" : { # ST_GAM_PIP
+            "q_xHVEna_DO" : "xOn",
+            "i_iPRESS" : "?unmapped",
+            "i_xSP_DI" : "?unmapped"},
+```
+#### run mapSimIO.py
 * create a working directory
 * copy the ".tsproj" file for the Twincat project that you created above to the working directory
 * copy the "gen.varMap" from the working directory for your generator run above to the working directory.  This is a serialized python dictionary that maps PLC variables to sim variables.  This is used to replicate the links from PLC variables to PLC I/O devices and create links between sim variables and sim I/O devices.  Otherwise this is a very tedious manual process.
