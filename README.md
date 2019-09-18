@@ -1,9 +1,9 @@
 # pyplc
-Contains two python programs, genPLC.py and mapSimIO.py.  The first takes a tabular device information table, and generates Beckhoff Twincat PLC code utilizing the vacuum device library created at SLAC.  The second takes output from genPLC.py, plus the Twincat tsproj xml file, and links the simulation PLC's variables to the simulated EtherCAT I/O devices, according to the links from the controls PLC's variable to I/O links.
+Contains two python programs, genPLC.py and mapSimIO.py.  The first takes a tabular device information table, and generates Beckhoff Twincat PLC code utilizing the vacuum device library created at SLAC.  The second takes output from genPLC.py, plus the Twincat tsproj xml file, and links the Twincat project's simulation PLC variables to the simulated EtherCAT I/O devices, according to the links from the controls PLC's variable to I/O links.
 
 ## genPLC.py
 ### edit device info file
-* for each device in the scope of the generator, edit the columns for capturing dependencies on other plc or sim devices (TODO: need to document each device)
+* for each device in the scope of the generator, edit the columns for capturing dependencies on other plc or sim devices
 ### download device info file
 * Find the device information table (e.g., https://drive.google.com/drive/folders/1PX-yMYoACvApI5ir16ePVcxCfJ65B_pj), and download the PLC worksheet as a csv file
 * make sure the first row contains the columns: Area,PLC prog unit,Device Name,Device,PLC Tag,PLC dep gauge1,PLC dep gauge2,PLC dep pump1,PLC dep valve1,Volume,sim dep vol1,sim dep vol2 (column order doesn't matter)
